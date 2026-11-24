@@ -44,3 +44,6 @@ next-env.d.ts
 
 # worker output
 worker.log*
+
+# worker state (daily reminder)
+.worker-state.json

@@ -32,6 +32,9 @@ export function Header() {
         <Link href="/review" className="rounded-lg px-3 py-1.5 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
           Review
         </Link>
+        <Link href="/recall" className="rounded-lg px-3 py-1.5 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
+          Recall
+        </Link>
         <Link href="/ask" className="rounded-lg px-3 py-1.5 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
           Ask
         </Link>

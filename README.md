@@ -39,6 +39,7 @@ Each save becomes:
 - **Review mode**: one card at a time, marked **Reviewed** or **Applied**, or saved for later.
 - **Search** across every transcript and note (Postgres full-text search).
 - **Ask**: question one save, a collection or everything ("What have I saved about microservices?"). The laptop worker answers only from your saves, citing the videos and timestamps it used, usually within a minute.
+- **Recall**: after a save is processed, the worker turns its key ideas into up to five question cards (none for memes or pure entertainment). You answer from memory, reveal the answer, and grade yourself: **Forgot** brings the card back tomorrow, **Got it** and **Easy** push it further out (1, 2, 4, 7, 14, 30, then 60 days). A daily phone reminder says how many cards are due; set the hour with `TAKEAWAY_RECALL_HOUR` (default 8).
 - **Notifications** on your phone when notes are ready.
 
 ## Design decisions
@@ -76,7 +77,7 @@ Want your own copy without doing this by hand? Use [**takeaway-builder**](https:
 ## Development
 
 ```bash
-npm test     # captions, frame picking, link parsing, notes schema
+npm test     # captions, frame picking, link parsing, notes schema, Ask, Recall scheduling
 npm run lint
 npm run build
 ```
@@ -86,7 +87,6 @@ npm run build
 - Semantic search (embeddings), so Ask also finds saves that use different words
 - X (Twitter) posts, and private or login-only Instagram posts (public Reels already work)
 - A native Android share screen that closes instantly
-- Spaced-repetition reminders
 
 ## License
 

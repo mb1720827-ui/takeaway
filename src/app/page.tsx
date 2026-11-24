@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { retryItem } from "./actions";
@@ -59,9 +60,11 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
     );
   }
 
-  const [{ data: itemData }, { data: collectionData }] = await Promise.all([
+  await connection(); // "due" cards depend on the current time
+  const [{ data: itemData }, { data: collectionData }, { count: dueCards }] = await Promise.all([
     supabase.from("takeaway_items").select(ITEM_FIELDS).order("created_at", { ascending: false }).limit(500),
     supabase.from("takeaway_collections").select("id, name, suggested").order("name"),
+    supabase.from("takeaway_cards").select("id", { count: "exact", head: true }).lte("due_at", new Date().toISOString()),
   ]);
   const items = (itemData ?? []) as ItemRow[];
   const collections = collectionData ?? [];
@@ -102,6 +105,13 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
         <Link href="/review" className="rounded-2xl bg-violet-600 p-5 text-white hover:bg-violet-700">
           <span className="text-lg font-semibold">Review {unread} new {unread === 1 ? "item" : "items"} →</span>
           <span className="block text-sm text-violet-100">One at a time, at your own pace.</span>
+        </Link>
+      )}
+
+      {(dueCards ?? 0) > 0 && (
+        <Link href="/recall" className="rounded-2xl bg-emerald-600 p-5 text-white hover:bg-emerald-700">
+          <span className="text-lg font-semibold">Recall {dueCards} {dueCards === 1 ? "card" : "cards"} →</span>
+          <span className="block text-sm text-emerald-100">A couple of minutes so what you saved sticks.</span>
         </Link>
       )}
 

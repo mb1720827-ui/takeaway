@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { detectPlatform, extractUrl } from "@/lib/links";
+import { GRADES, schedule, type Grade } from "@/lib/recall";
 import { createClient } from "@/lib/supabase/server";
 
 export interface FormState {
@@ -119,6 +120,21 @@ export async function retryQuestion(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("takeaway_questions").update({ status: "queued", attempts: 0, error: null }).eq("id", id);
   revalidatePath(`/ask/${id}`);
+}
+
+/** Records how well the user recalled a card and schedules when it comes back. */
+export async function gradeCard(formData: FormData) {
+  const id = Id.parse(formData.get("id"));
+  const grade = z.enum(GRADES as [Grade, ...Grade[]]).parse(formData.get("grade"));
+  const supabase = await createClient();
+  const { data: card } = await supabase.from("takeaway_cards").select("box, reviews").eq("id", id).maybeSingle();
+  if (!card) return;
+  const next = schedule(card.box, grade);
+  await supabase
+    .from("takeaway_cards")
+    .update({ box: next.box, due_at: next.due_at.toISOString(), reviews: card.reviews + 1, last_reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath("/recall");
 }
 
 export interface TokenState {

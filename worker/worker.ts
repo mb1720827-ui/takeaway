@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 import { formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
 import { AnswerSchema, answerJsonSchema, saveToMarkdown, searchTerms, type SaveForAsk } from "../src/lib/ask";
 import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
+import { CardsSchema, cardsJsonSchema } from "../src/lib/recall";
 
 const run = promisify(execFile);
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
@@ -75,6 +76,8 @@ async function main() {
       await processItem(item, claude);
       await answerQuestions(claude);
     }
+    await generateCards(claude);
+    await remindDueCards();
     if (ONCE) return;
     await new Promise((r) => setTimeout(r, POLL_MS));
   }
@@ -369,6 +372,56 @@ async function answerQuestion(q: Question, claude: string) {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+}
+
+// ---------- Recall: spaced-repetition cards ----------
+
+/** Writes recall cards for up to `limit` ready saves that don't have any yet (new saves and older ones). */
+async function generateCards(claude: string, limit = 5) {
+  const { data } = await supabase
+    .from("takeaway_items")
+    .select(SAVE_FIELDS)
+    .eq("status", "ready")
+    .is("cards_generated_at", null)
+    .order("processed_at", { ascending: false })
+    .limit(limit);
+  for (const save of ((data ?? []) as SaveRow[]).map(toSave)) {
+    const dir = mkdtempSync(join(WORK_ROOT, "cards-"));
+    try {
+      writeFileSync(join(dir, "save.md"), saveToMarkdown(save, 3_000));
+      const prompt = readFileSync(new URL("./recall-prompt.md", import.meta.url), "utf8");
+      const { cards } = CardsSchema.parse(await runClaude(claude, dir, prompt, cardsJsonSchema()));
+      if (cards.length) {
+        const { error } = await supabase.from("takeaway_cards").insert(cards.map((c) => ({ item_id: save.id, question: c.question, answer: c.answer })));
+        if (error) throw new Error(error.message);
+      }
+      await supabase.from("takeaway_items").update({ cards_generated_at: new Date().toISOString() }).eq("id", save.id);
+      log(`Recall: ${cards.length} card${cards.length === 1 ? "" : "s"} for ${save.title ?? save.id}`);
+    } catch (err) {
+      log(`Recall cards failed for ${save.id}: ${err instanceof Error ? err.message : err}`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+}
+
+const STATE_FILE = join(process.cwd(), ".worker-state.json");
+const RECALL_HOUR = Number(process.env.TAKEAWAY_RECALL_HOUR ?? 8);
+
+/** Once a day, from RECALL_HOUR (local time), tells the phone how many cards are due. */
+async function remindDueCards() {
+  const now = new Date();
+  const today = now.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+  let state: { lastRecallReminder?: string } = {};
+  try {
+    state = JSON.parse(readFileSync(STATE_FILE, "utf8"));
+  } catch {
+    /* first run */
+  }
+  if (now.getHours() < RECALL_HOUR || state.lastRecallReminder === today) return;
+  const { count } = await supabase.from("takeaway_cards").select("id", { count: "exact", head: true }).lte("due_at", now.toISOString());
+  if (count) await notify("/recall", `${count} card${count === 1 ? "" : "s"} to recall today`, "Two minutes of recall makes what you saved stick.");
+  writeFileSync(STATE_FILE, JSON.stringify({ ...state, lastRecallReminder: today }));
 }
 
 async function collectionId(name: string, collections: Collection[]): Promise<string | null> {
