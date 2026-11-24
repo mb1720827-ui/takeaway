@@ -170,7 +170,15 @@ export function NotesView({ notes, related }: { notes: Notes; related: Map<strin
             {notes.action_items.map((a, i) => (
               <li key={i} className="flex gap-2">
                 <span aria-hidden>☐</span>
-                {a}
+                <span>
+                  {a}
+                  {/* STRIDE_URL links each idea to Stride's chat box, so it can become a task or habit. */}
+                  {process.env.STRIDE_URL && (
+                    <a href={`${process.env.STRIDE_URL}/?q=${encodeURIComponent(a)}`} className="ml-2 text-sm font-medium text-emerald-700 underline dark:text-emerald-400">
+                      Plan it in Stride
+                    </a>
+                  )}
+                </span>
               </li>
             ))}
           </ul>

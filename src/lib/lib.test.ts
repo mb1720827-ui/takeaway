@@ -108,4 +108,26 @@ describe("notes schema", () => {
   it("rejects notes missing required parts", () => {
     expect(NotesSchema.safeParse({ title: "x" }).success).toBe(false);
   });
+
+  it("keeps the Stride skill a save belongs to, and allows none", () => {
+    const notes = {
+      title: "SQL joins in 60 seconds",
+      author: null,
+      takeaway: "An INNER JOIN keeps only rows that match in both tables.",
+      key_points: [],
+      steps: [],
+      resources: [],
+      code: [],
+      concepts: [],
+      action_items: [],
+      on_screen: [],
+      collection: "Software Architecture",
+      tags: [],
+      connections: [],
+    };
+    const skill = "11111111-1111-4111-8111-111111111111";
+    expect(NotesSchema.parse({ ...notes, skill_id: skill }).skill_id).toBe(skill);
+    expect(NotesSchema.parse({ ...notes, skill_id: null }).skill_id).toBeNull();
+    expect(NotesSchema.safeParse(notes).success).toBe(true);
+  });
 });

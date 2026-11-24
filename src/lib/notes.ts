@@ -32,6 +32,11 @@ export const NotesSchema = z.object({
     .array(z.object({ id: z.string(), why: z.string() }))
     .max(5)
     .describe("Earlier saves (by id, only from the list given) that this relates to, and how"),
+  skill_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("The id of one of their Stride skills (only from the list given) that this clearly helps them learn, or null"),
 });
 export type Notes = z.infer<typeof NotesSchema>;
 

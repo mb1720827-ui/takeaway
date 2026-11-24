@@ -109,13 +109,17 @@ async function processItem(item: Item, claude: string) {
   const dir = mkdtempSync(join(WORK_ROOT, "item-"));
   try {
     const prepared = await prepare(item, dir);
-    const [{ data: collections }, { data: recent }] = await Promise.all([
+    const [{ data: collections }, { data: recent }, { data: skillRows }] = await Promise.all([
       supabase.from("takeaway_collections").select("id, name").order("name"),
       supabase.from("takeaway_items").select("id, title, takeaway").eq("status", "ready").neq("id", item.id).order("processed_at", { ascending: false }).limit(40),
+      // Stride skills, when Stride shares this project (an error just means it isn't set up).
+      supabase.from("stride_plans").select("id, title").eq("kind", "skill").eq("status", "active"),
     ]);
-    const notes = await askClaude(claude, dir, collections ?? [], recent ?? []);
+    const skills = skillRows ?? [];
+    const notes = await askClaude(claude, dir, collections ?? [], recent ?? [], skills);
     const recentIds = new Set((recent ?? []).map((r) => r.id));
     notes.connections = notes.connections.filter((c) => recentIds.has(c.id));
+    const skillId = skills.some((s) => s.id === notes.skill_id) ? notes.skill_id : null;
 
     const { error } = await supabase
       .from("takeaway_items")
@@ -127,6 +131,7 @@ async function processItem(item: Item, claude: string) {
         notes,
         transcript: prepared.transcript || null,
         collection_id: await collectionId(notes.collection, collections ?? []),
+        ...(skills.length > 0 ? { skill_id: skillId } : {}),
         processed_at: new Date().toISOString(),
         error: null,
       })
@@ -238,7 +243,13 @@ async function extractFrames(dir: string, video: string, duration: number): Prom
   return kept;
 }
 
-async function askClaude(claude: string, dir: string, collections: Collection[], recent: { id: string; title: string | null; takeaway: string | null }[]): Promise<Notes> {
+async function askClaude(
+  claude: string,
+  dir: string,
+  collections: Collection[],
+  recent: { id: string; title: string | null; takeaway: string | null }[],
+  skills: { id: string; title: string }[],
+): Promise<Notes> {
   const prompt = [
     readFileSync(new URL("./prompt.md", import.meta.url), "utf8"),
     "## Your collections",
@@ -246,6 +257,9 @@ async function askClaude(claude: string, dir: string, collections: Collection[],
     "",
     "## Earlier saves (for connections)",
     ...(recent.length ? recent.map((r) => `- ${r.id}: ${r.title ?? "untitled"}: ${r.takeaway ?? ""}`) : ["(none yet)"]),
+    "",
+    "## Skills they are learning in Stride (for skill_id; null when none clearly fits)",
+    ...(skills.length ? skills.map((s) => `- ${s.id}: ${s.title}`) : ["(none)"]),
   ].join("\n");
 
   return NotesSchema.parse(await runClaude(claude, dir, prompt, notesJsonSchema()));
