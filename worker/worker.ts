@@ -6,7 +6,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { formatTime, frameInterval, htmlToText, parseVtt, pickFrames, transcriptText, type Frame, type Segment } from "../src/lib/media";
+import { formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
 import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
 
 const run = promisify(execFile);
@@ -38,9 +38,7 @@ interface Collection {
   name: string;
 }
 /** The parts of yt-dlp's metadata the worker uses. */
-interface VideoInfo {
-  extractor_key?: string;
-  duration?: number;
+interface VideoInfo extends VideoMeta {
   title?: string;
   uploader?: string;
   channel?: string;
@@ -144,18 +142,21 @@ async function prepare(item: Item, dir: string): Promise<Prepared> {
   } catch {
     info = null;
   }
-  if (!info || info.extractor_key === "Generic" || !(Number(info.duration) > 0)) return preparePage(item, dir);
-  const duration = Number(info.duration);
-  if (duration > MAX_VIDEO_SECONDS) throw new Error("Videos longer than 45 minutes aren't supported yet.");
+  if (!looksLikeVideo(info)) return preparePage(item, dir);
+  const tooLong = () => new Error("Videos longer than 45 minutes aren't supported yet.");
+  if (Number(info.duration) > MAX_VIDEO_SECONDS) throw tooLong();
 
   await run(
     "yt-dlp",
     ["--no-warnings", "--no-playlist", "--write-subs", "--write-auto-subs", "--sub-langs", "en.*,eng.*", "--sub-format", "vtt",
-      "-f", "b[height<=720]/bv*[height<=720]+ba/b", "--merge-output-format", "mp4", "-o", join(dir, "video.%(ext)s"), item.url],
+      "--max-filesize", "500M", "-f", "b[height<=720]/bv*[height<=720]+ba/b", "--merge-output-format", "mp4", "-o", join(dir, "video.%(ext)s"), item.url],
     { timeout: 10 * 60_000, maxBuffer: 16 * MB },
   );
   const files = readdirSync(dir);
   const video = files.find((f) => /^video\.(mp4|webm|mkv|mov)$/.test(f));
+  // Some platforms (Instagram) don't report the length up front, so measure the downloaded file.
+  const duration = Number(info.duration) > 0 ? Number(info.duration) : video ? await probeDuration(join(dir, video)) : 0;
+  if (duration > MAX_VIDEO_SECONDS) throw tooLong();
   const captions = files.find((f) => f.endsWith(".vtt"));
   let segments: Segment[] = captions ? parseVtt(readFileSync(join(dir, captions), "utf8")) : [];
   if (segments.length === 0 && video) segments = await transcribe(dir, video);
@@ -204,6 +205,13 @@ async function transcribe(dir: string, video: string): Promise<Segment[]> {
   await run("whisper-ctranslate2", [join(dir, "audio.wav"), "--model", "small", "--output_format", "vtt", "--output_dir", dir], { timeout: 30 * 60_000, maxBuffer: 16 * MB });
   const out = join(dir, "audio.vtt");
   return existsSync(out) ? parseVtt(readFileSync(out, "utf8")) : [];
+}
+
+/** Length of a media file in seconds, read with ffprobe (installed with ffmpeg). */
+async function probeDuration(file: string): Promise<number> {
+  const { stdout } = await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file], { timeout: 60_000 });
+  const seconds = Number.parseFloat(stdout);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
 }
 
 async function extractFrames(dir: string, video: string, duration: number): Promise<Frame[]> {

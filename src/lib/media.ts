@@ -93,5 +93,17 @@ export function htmlToText(html: string, maxChars = 60000): { title: string | nu
   return { title, text };
 }
 
+export interface VideoMeta {
+  extractor_key?: string;
+  duration?: number;
+  formats?: { vcodec?: string }[];
+}
+
+/** Whether yt-dlp's metadata describes a video. Instagram leaves out "duration", so having a video stream also counts. */
+export function looksLikeVideo<T extends VideoMeta>(info: T | null): info is T {
+  if (!info || info.extractor_key === "Generic") return false;
+  return Number(info.duration) > 0 || (info.formats ?? []).some((f) => Boolean(f.vcodec) && f.vcodec !== "none");
+}
+
 /** One frame every few seconds, so short clips get detail and long videos stay within budget. */
 export const frameInterval = (durationSeconds: number) => Math.max(2, Math.ceil(durationSeconds / 24));

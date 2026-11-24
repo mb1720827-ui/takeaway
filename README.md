@@ -83,7 +83,7 @@ npm run build
 ## Roadmap
 
 - **Ask:** chat with one save, a collection or everything ("What have I saved about microservices?"), answered by the same worker
-- Instagram Reels and X
+- X (Twitter) posts, and private or login-only Instagram posts (public Reels already work)
 - A native Android share screen that closes instantly
 - Spaced-repetition reminders
 

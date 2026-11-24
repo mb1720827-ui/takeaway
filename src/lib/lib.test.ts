@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectPlatform, extractUrl } from "./links";
-import { formatTime, frameInterval, parseVtt, pickFrames, transcriptText } from "./media";
+import { formatTime, frameInterval, looksLikeVideo, parseVtt, pickFrames, transcriptText } from "./media";
 import { notesJsonSchema, NotesSchema } from "./notes";
 
 describe("links", () => {
@@ -78,6 +78,23 @@ describe("frames", () => {
   it("samples short clips densely and long videos sparsely", () => {
     expect(frameInterval(36)).toBe(2);
     expect(frameInterval(1200)).toBe(50);
+  });
+});
+
+describe("looksLikeVideo", () => {
+  it("treats Instagram reels as video even though yt-dlp gives no duration", () => {
+    const instagram = { extractor_key: "Instagram", formats: [{ vcodec: "none" }, { vcodec: "avc1.64001f" }] };
+    expect(looksLikeVideo(instagram)).toBe(true);
+  });
+
+  it("uses the duration when there is one", () => {
+    expect(looksLikeVideo({ extractor_key: "TikTok", duration: 36 })).toBe(true);
+  });
+
+  it("rejects pages, audio-only results and missing metadata", () => {
+    expect(looksLikeVideo({ extractor_key: "Generic", duration: 120 })).toBe(false);
+    expect(looksLikeVideo({ extractor_key: "Instagram", formats: [{ vcodec: "none" }] })).toBe(false);
+    expect(looksLikeVideo(null)).toBe(false);
   });
 });
 
