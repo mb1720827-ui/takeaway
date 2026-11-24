@@ -66,7 +66,7 @@ Each save becomes:
    npm install
    npm run worker          # keeps running; or: npm run worker -- --once
    # Windows: start it automatically at login (hidden, restarts if it stops, logs to worker.log)
-   powershell -ExecutionPolicy Bypass -File workerinstall-autostart.ps1
+   powershell -ExecutionPolicy Bypass -File worker\install-autostart.ps1
    ```
 6. **Notifications (optional):** install ntfy on your phone and set `NTFY_TOPIC` to a long random name.
 
