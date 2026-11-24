@@ -61,6 +61,9 @@ async function Collection({ params, searchParams }: Pick<PageProps<"/c/[id]">, "
             {collection.suggested ? "Keep / rename" : "Rename"}
           </button>
         </form>
+        <Link href={`/ask?scope=collection:${collection.id}`} className="text-sm font-medium text-violet-700 underline dark:text-violet-400">
+          Ask about this collection
+        </Link>
       </section>
 
       <nav className="flex gap-1 text-sm">

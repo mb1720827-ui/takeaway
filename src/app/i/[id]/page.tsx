@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -62,9 +63,14 @@ async function Item({ params }: Pick<PageProps<"/i/[id]">, "params">) {
         <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
         {item.author && <p className="text-sm text-zinc-500">by {item.author}</p>}
         <p className="rounded-xl bg-violet-50 p-4 text-lg leading-relaxed dark:bg-violet-950/50">{item.takeaway}</p>
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-violet-700 underline dark:text-violet-400">
-          Open the original
-        </a>
+        <div className="flex flex-wrap gap-4 text-sm font-medium text-violet-700 dark:text-violet-400">
+          <a href={item.url} target="_blank" rel="noopener noreferrer" className="underline">
+            Open the original
+          </a>
+          <Link href={`/ask?scope=item:${item.id}`} className="underline">
+            Ask about this save
+          </Link>
+        </div>
       </section>
 
       <section className={`${card} flex flex-wrap items-center gap-2`}>

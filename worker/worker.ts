@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
+import { AnswerSchema, answerJsonSchema, saveToMarkdown, searchTerms, type SaveForAsk } from "../src/lib/ask";
 import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
 
 const run = promisify(execFile);
@@ -18,7 +19,7 @@ const required = (name: string) => {
   return value;
 };
 
-const POLL_MS = Number(process.env.TAKEAWAY_POLL_SECONDS ?? 60) * 1000;
+const POLL_MS = Number(process.env.TAKEAWAY_POLL_SECONDS ?? 15) * 1000;
 const ONCE = process.argv.includes("--once");
 const MAX_VIDEO_SECONDS = 45 * 60;
 const WORK_ROOT = join(tmpdir(), "takeaway-worker");
@@ -64,10 +65,16 @@ async function main() {
   await supabase.from("takeaway_collections").upsert(DEFAULT_COLLECTIONS.map((name) => ({ name })), { onConflict: "user_id,name", ignoreDuplicates: true });
   // Anything left "processing" was interrupted (this is the only worker), so try it again.
   await supabase.from("takeaway_items").update({ status: "queued" }).eq("status", "processing");
+  await supabase.from("takeaway_questions").update({ status: "queued" }).eq("status", "answering");
 
-  log(`Worker running with ${claude}. Checking for new saves every ${POLL_MS / 1000}s.`);
+  log(`Worker running with ${claude}. Checking for new saves and questions every ${POLL_MS / 1000}s.`);
   for (;;) {
-    for (let item = await claimNext(); item; item = await claimNext()) await processItem(item, claude);
+    // Questions first: they are quick, and someone is usually waiting for the answer.
+    await answerQuestions(claude);
+    for (let item = await claimNext(); item; item = await claimNext()) {
+      await processItem(item, claude);
+      await answerQuestions(claude);
+    }
     if (ONCE) return;
     await new Promise((r) => setTimeout(r, POLL_MS));
   }
@@ -123,7 +130,7 @@ async function processItem(item: Item, claude: string) {
       .eq("id", item.id);
     if (error) throw new Error(`Saving notes failed: ${error.message}`);
     log(`Ready in ${Math.round((Date.now() - started) / 1000)}s: ${notes.title} → ${notes.collection}`);
-    await notify(item.id, `Ready: ${notes.title}`, notes.takeaway);
+    await notify(`/i/${item.id}`, `Ready: ${notes.title}`, notes.takeaway);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log(`Failed: ${message}`);
@@ -238,8 +245,13 @@ async function askClaude(claude: string, dir: string, collections: Collection[],
     ...(recent.length ? recent.map((r) => `- ${r.id}: ${r.title ?? "untitled"}: ${r.takeaway ?? ""}`) : ["(none yet)"]),
   ].join("\n");
 
+  return NotesSchema.parse(await runClaude(claude, dir, prompt, notesJsonSchema()));
+}
+
+/** Runs Claude Code headless in `dir` and returns its structured output, validated by Claude Code against `schema`. */
+async function runClaude(claude: string, dir: string, prompt: string, schema: object): Promise<unknown> {
   // Read-only and isolated: no shell or code tools, files limited to this folder, no personal hooks, plugins or MCP servers.
-  const args = ["-p", "--output-format", "json", "--json-schema", JSON.stringify(notesJsonSchema()), "--allowedTools", "Read",
+  const args = ["-p", "--output-format", "json", "--json-schema", JSON.stringify(schema), "--allowedTools", "Read",
     "--permission-mode", "dontAsk", "--restricted", "--setting-sources", "project", "--strict-mcp-config", "--no-session-persistence"];
   if (process.env.TAKEAWAY_MODEL) args.push("--model", process.env.TAKEAWAY_MODEL);
 
@@ -260,7 +272,103 @@ async function askClaude(claude: string, dir: string, collections: Collection[],
   });
   const result = JSON.parse(stdout);
   if (result.is_error) throw new Error(`Claude Code: ${String(result.result).slice(0, 300)}`);
-  return NotesSchema.parse(result.structured_output);
+  return result.structured_output;
+}
+
+// ---------- Ask: questions about your saves ----------
+
+interface Question {
+  id: string;
+  question: string;
+  scope: "all" | "collection" | "item";
+  collection_id: string | null;
+  item_id: string | null;
+}
+
+const SAVE_FIELDS = "id, url, title, takeaway, notes, transcript, collection:takeaway_collections(name)";
+type SaveRow = Omit<SaveForAsk, "collection"> & { collection: { name: string } | { name: string }[] | null };
+const toSave = (r: SaveRow): SaveForAsk => ({
+  ...r,
+  collection: Array.isArray(r.collection) ? (r.collection[0]?.name ?? null) : (r.collection?.name ?? null),
+});
+
+async function answerQuestions(claude: string) {
+  for (;;) {
+    const { data: next } = await supabase
+      .from("takeaway_questions")
+      .select("id, attempts")
+      .eq("status", "queued")
+      .lt("attempts", 3)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    if (!next) return;
+    const { data: q } = await supabase
+      .from("takeaway_questions")
+      .update({ status: "answering", attempts: next.attempts + 1, error: null })
+      .eq("id", next.id)
+      .eq("status", "queued")
+      .select("id, question, scope, collection_id, item_id")
+      .maybeSingle();
+    if (q) await answerQuestion(q as Question, claude);
+  }
+}
+
+/** The saves a question is about: one item, a whole collection, or the best search matches across everything. */
+async function savesFor(q: Question): Promise<{ included: SaveForAsk[]; others: { id: string; title: string | null }[] }> {
+  if (q.scope === "item") {
+    const { data } = await supabase.from("takeaway_items").select(SAVE_FIELDS).eq("id", q.item_id!).eq("status", "ready");
+    return { included: ((data ?? []) as SaveRow[]).map(toSave), others: [] };
+  }
+  if (q.scope === "collection") {
+    const { data } = await supabase.from("takeaway_items").select(SAVE_FIELDS).eq("collection_id", q.collection_id!).eq("status", "ready").order("processed_at", { ascending: false }).limit(25);
+    return { included: ((data ?? []) as SaveRow[]).map(toSave), others: [] };
+  }
+  const terms = searchTerms(q.question);
+  const { data: matches } = terms ? await supabase.rpc("takeaway_search", { p_query: terms, p_limit: 12 }) : { data: [] };
+  let ids = ((matches ?? []) as { id: string }[]).map((m) => m.id);
+  const { data: recent } = await supabase.from("takeaway_items").select("id, title").eq("status", "ready").order("processed_at", { ascending: false }).limit(40);
+  if (ids.length === 0) ids = (recent ?? []).slice(0, 8).map((r) => r.id); // nothing matched: give it the latest saves to work with
+  const { data } = ids.length ? await supabase.from("takeaway_items").select(SAVE_FIELDS).in("id", ids) : { data: [] };
+  const byId = new Map(((data ?? []) as SaveRow[]).map((r) => [r.id, toSave(r)]));
+  const included = ids.map((id) => byId.get(id)).filter((s): s is SaveForAsk => Boolean(s)); // keep search-rank order
+  return { included, others: (recent ?? []).filter((r) => !byId.has(r.id)) };
+}
+
+async function answerQuestion(q: Question, claude: string) {
+  log(`Answering: ${q.question}`);
+  const dir = mkdtempSync(join(WORK_ROOT, "ask-"));
+  try {
+    const { included, others } = await savesFor(q);
+    mkdirSync(join(dir, "saves"));
+    for (const s of included) writeFileSync(join(dir, "saves", `${s.id}.md`), saveToMarkdown(s, q.scope === "item" ? 30_000 : 3_000));
+    const scope = q.scope === "item" ? "one save" : q.scope === "collection" ? `the collection "${included[0]?.collection ?? ""}"` : "all of the user's saves (best matches below)";
+    writeFileSync(
+      join(dir, "index.md"),
+      [
+        `# Question about ${scope}`,
+        "",
+        "## Included saves (read these in saves/)",
+        ...(included.length ? included.map((s) => `- ${s.id}: ${s.title ?? "untitled"}: ${s.takeaway ?? ""}`) : ["(none)"]),
+        ...(others.length ? ["", "## Other saves, titles only (not included)", ...others.map((o) => `- ${o.title ?? "untitled"}`)] : []),
+      ].join("\n"),
+    );
+    const prompt = `${readFileSync(new URL("./ask-prompt.md", import.meta.url), "utf8")}\n## The question\n${q.question}`;
+    const answer = AnswerSchema.parse(await runClaude(claude, dir, prompt, answerJsonSchema()));
+    const known = new Set(included.map((s) => s.id));
+    answer.sources = answer.sources.filter((s) => known.has(s.id));
+
+    const { error } = await supabase.from("takeaway_questions").update({ status: "answered", answer, answered_at: new Date().toISOString(), error: null }).eq("id", q.id);
+    if (error) throw new Error(`Saving the answer failed: ${error.message}`);
+    log(`Answered (${answer.sources.length} sources): ${q.question}`);
+    await notify(`/ask/${q.id}`, "Answer ready", q.question);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    log(`Couldn't answer: ${message}`);
+    await supabase.from("takeaway_questions").update({ status: "failed", error: message.slice(0, 500) }).eq("id", q.id);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 async function collectionId(name: string, collections: Collection[]): Promise<string | null> {
@@ -275,13 +383,13 @@ async function collectionId(name: string, collections: Collection[]): Promise<st
 }
 
 /** Push notification through ntfy (free Android app). The topic name works like a password: make it long and random. */
-async function notify(id: string, title: string, message: string) {
+async function notify(path: string, title: string, message: string) {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) return;
   const appUrl = process.env.TAKEAWAY_APP_URL;
   await fetch("https://ntfy.sh", {
     method: "POST",
-    body: JSON.stringify({ topic, title: title.slice(0, 120), message: message.slice(0, 300), ...(appUrl ? { click: `${appUrl}/i/${id}` } : {}) }),
+    body: JSON.stringify({ topic, title: title.slice(0, 120), message: message.slice(0, 300), ...(appUrl ? { click: `${appUrl}${path}` } : {}) }),
   }).catch((err) => log(`Notification failed: ${err}`));
 }
 

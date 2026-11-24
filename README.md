@@ -38,6 +38,7 @@ Each save becomes:
 - **Collections** such as AI Tips, AI Innovation, Software Architecture, Inspiration and Life Tips. The AI suggests new ones; you keep, rename or move items.
 - **Review mode**: one card at a time, marked **Reviewed** or **Applied**, or saved for later.
 - **Search** across every transcript and note (Postgres full-text search).
+- **Ask**: question one save, a collection or everything ("What have I saved about microservices?"). The laptop worker answers only from your saves, citing the videos and timestamps it used, usually within a minute.
 - **Notifications** on your phone when notes are ready.
 
 ## Design decisions
@@ -51,7 +52,7 @@ Each save becomes:
 
 ## Set up
 
-1. **Database:** create a Supabase project and run [`supabase/migrations/20261124100000_takeaway.sql`](supabase/migrations/20261124100000_takeaway.sql) in the SQL Editor.
+1. **Database:** create a Supabase project and run every file in [`supabase/migrations/`](supabase/migrations/), oldest first, in the SQL Editor.
 2. **App:**
    1. Copy `.env.example` to `.env.local` and add your Supabase URL and publishable key.
    2. Deploy to Vercel with those two variables.
@@ -82,7 +83,7 @@ npm run build
 
 ## Roadmap
 
-- **Ask:** chat with one save, a collection or everything ("What have I saved about microservices?"), answered by the same worker
+- Semantic search (embeddings), so Ask also finds saves that use different words
 - X (Twitter) posts, and private or login-only Instagram posts (public Reels already work)
 - A native Android share screen that closes instantly
 - Spaced-repetition reminders

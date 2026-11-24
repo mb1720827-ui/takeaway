@@ -95,6 +95,32 @@ export async function deleteItem(formData: FormData) {
   redirect("/");
 }
 
+/**
+ * Queues a question for the laptop worker. `scope` is "all", "collection:<id>" or "item:<id>".
+ * Row-level security means ids that aren't the user's simply won't match anything.
+ */
+export async function askQuestion(_prev: FormState, formData: FormData): Promise<FormState> {
+  const question = String(formData.get("question") ?? "").trim();
+  if (question.length < 3 || question.length > 1000) return { error: "Ask a question between 3 and 1,000 characters.", value: question };
+  const [kind, target] = String(formData.get("scope") ?? "all").split(":");
+  const row: Record<string, string> = { question, scope: "all" };
+  if ((kind === "collection" || kind === "item") && Id.safeParse(target).success) {
+    row.scope = kind;
+    row[kind === "item" ? "item_id" : "collection_id"] = target;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("takeaway_questions").insert(row).select("id").single();
+  if (error || !data) return { error: "Couldn't send your question. Are you signed in?", value: question };
+  redirect(`/ask/${data.id}`);
+}
+
+export async function retryQuestion(formData: FormData) {
+  const id = Id.parse(formData.get("id"));
+  const supabase = await createClient();
+  await supabase.from("takeaway_questions").update({ status: "queued", attempts: 0, error: null }).eq("id", id);
+  revalidatePath(`/ask/${id}`);
+}
+
 export interface TokenState {
   token?: string;
   error?: string;
