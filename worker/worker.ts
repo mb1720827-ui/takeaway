@@ -1,0 +1,304 @@
+// Takeaway worker: runs on your laptop, picks up links saved from your phone, and turns each one into notes
+// using Claude Code (your Claude plan, no API key). Start it with: npm run worker   (or: npm run worker -- --once)
+import { execFile, spawn } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { createClient } from "@supabase/supabase-js";
+import { formatTime, frameInterval, htmlToText, parseVtt, pickFrames, transcriptText, type Frame, type Segment } from "../src/lib/media";
+import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
+
+const run = promisify(execFile);
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+
+const required = (name: string) => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Set ${name} in .env.local (see .env.example)`);
+  return value;
+};
+
+const POLL_MS = Number(process.env.TAKEAWAY_POLL_SECONDS ?? 60) * 1000;
+const ONCE = process.argv.includes("--once");
+const MAX_VIDEO_SECONDS = 45 * 60;
+const WORK_ROOT = join(tmpdir(), "takeaway-worker");
+const MB = 1024 * 1024;
+
+const supabase = createClient(required("NEXT_PUBLIC_SUPABASE_URL"), required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"), {
+  auth: { persistSession: false },
+});
+
+interface Item {
+  id: string;
+  url: string;
+  platform: string;
+}
+interface Collection {
+  id: string;
+  name: string;
+}
+/** The parts of yt-dlp's metadata the worker uses. */
+interface VideoInfo {
+  extractor_key?: string;
+  duration?: number;
+  title?: string;
+  uploader?: string;
+  channel?: string;
+  description?: string;
+}
+interface Prepared {
+  author: string | null;
+  transcript: string;
+}
+
+async function main() {
+  const { error } = await supabase.auth.signInWithPassword({ email: required("TAKEAWAY_EMAIL"), password: required("TAKEAWAY_PASSWORD") });
+  if (error) throw new Error(`Couldn't sign in as TAKEAWAY_EMAIL: ${error.message}`);
+  const claude = findClaude();
+  await run("yt-dlp", ["--version"]).catch(() => {
+    throw new Error("yt-dlp isn't installed. On Windows: winget install yt-dlp.yt-dlp");
+  });
+  await run("ffmpeg", ["-version"]).catch(() => {
+    throw new Error("ffmpeg isn't installed. On Windows: winget install Gyan.FFmpeg");
+  });
+  mkdirSync(WORK_ROOT, { recursive: true });
+
+  await supabase.from("takeaway_collections").upsert(DEFAULT_COLLECTIONS.map((name) => ({ name })), { onConflict: "user_id,name", ignoreDuplicates: true });
+  // Anything left "processing" was interrupted (this is the only worker), so try it again.
+  await supabase.from("takeaway_items").update({ status: "queued" }).eq("status", "processing");
+
+  log(`Worker running with ${claude}. Checking for new saves every ${POLL_MS / 1000}s.`);
+  for (;;) {
+    for (let item = await claimNext(); item; item = await claimNext()) await processItem(item, claude);
+    if (ONCE) return;
+    await new Promise((r) => setTimeout(r, POLL_MS));
+  }
+}
+
+async function claimNext(): Promise<Item | null> {
+  const { data: next } = await supabase
+    .from("takeaway_items")
+    .select("id, attempts")
+    .eq("status", "queued")
+    .lt("attempts", 3)
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (!next) return null;
+  const { data } = await supabase
+    .from("takeaway_items")
+    .update({ status: "processing", attempts: next.attempts + 1, error: null })
+    .eq("id", next.id)
+    .eq("status", "queued")
+    .select("id, url, platform")
+    .maybeSingle();
+  return data;
+}
+
+async function processItem(item: Item, claude: string) {
+  const started = Date.now();
+  log(`Processing ${item.url}`);
+  const dir = mkdtempSync(join(WORK_ROOT, "item-"));
+  try {
+    const prepared = await prepare(item, dir);
+    const [{ data: collections }, { data: recent }] = await Promise.all([
+      supabase.from("takeaway_collections").select("id, name").order("name"),
+      supabase.from("takeaway_items").select("id, title, takeaway").eq("status", "ready").neq("id", item.id).order("processed_at", { ascending: false }).limit(40),
+    ]);
+    const notes = await askClaude(claude, dir, collections ?? [], recent ?? []);
+    const recentIds = new Set((recent ?? []).map((r) => r.id));
+    notes.connections = notes.connections.filter((c) => recentIds.has(c.id));
+
+    const { error } = await supabase
+      .from("takeaway_items")
+      .update({
+        status: "ready",
+        title: notes.title,
+        author: notes.author ?? prepared.author,
+        takeaway: notes.takeaway,
+        notes,
+        transcript: prepared.transcript || null,
+        collection_id: await collectionId(notes.collection, collections ?? []),
+        processed_at: new Date().toISOString(),
+        error: null,
+      })
+      .eq("id", item.id);
+    if (error) throw new Error(`Saving notes failed: ${error.message}`);
+    log(`Ready in ${Math.round((Date.now() - started) / 1000)}s: ${notes.title} → ${notes.collection}`);
+    await notify(item.id, `Ready: ${notes.title}`, notes.takeaway);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    log(`Failed: ${message}`);
+    await supabase.from("takeaway_items").update({ status: "failed", error: message.slice(0, 500) }).eq("id", item.id);
+  } finally {
+    rmSync(dir, { recursive: true, force: true }); // never keep downloaded videos
+  }
+}
+
+/** Downloads what Claude needs into `dir`: context.md plus transcript.txt and frames/ for videos, or page.txt for articles. */
+async function prepare(item: Item, dir: string): Promise<Prepared> {
+  let info: VideoInfo | null = null;
+  try {
+    const { stdout } = await run("yt-dlp", ["--dump-single-json", "--no-warnings", "--no-playlist", item.url], { timeout: 120_000, maxBuffer: 64 * MB });
+    info = JSON.parse(stdout) as VideoInfo;
+  } catch {
+    info = null;
+  }
+  if (!info || info.extractor_key === "Generic" || !(Number(info.duration) > 0)) return preparePage(item, dir);
+  const duration = Number(info.duration);
+  if (duration > MAX_VIDEO_SECONDS) throw new Error("Videos longer than 45 minutes aren't supported yet.");
+
+  await run(
+    "yt-dlp",
+    ["--no-warnings", "--no-playlist", "--write-subs", "--write-auto-subs", "--sub-langs", "en.*,eng.*", "--sub-format", "vtt",
+      "-f", "b[height<=720]/bv*[height<=720]+ba/b", "--merge-output-format", "mp4", "-o", join(dir, "video.%(ext)s"), item.url],
+    { timeout: 10 * 60_000, maxBuffer: 16 * MB },
+  );
+  const files = readdirSync(dir);
+  const video = files.find((f) => /^video\.(mp4|webm|mkv|mov)$/.test(f));
+  const captions = files.find((f) => f.endsWith(".vtt"));
+  let segments: Segment[] = captions ? parseVtt(readFileSync(join(dir, captions), "utf8")) : [];
+  if (segments.length === 0 && video) segments = await transcribe(dir, video);
+  const frames = video ? await extractFrames(dir, video, duration) : [];
+  const transcript = transcriptText(segments);
+
+  writeFileSync(join(dir, "transcript.txt"), transcript || "No transcript is available for this video. Rely on the frames and caption.");
+  writeFileSync(
+    join(dir, "context.md"),
+    [
+      `# Saved ${item.platform} video`,
+      `- URL: ${item.url}`,
+      `- Title: ${info.title ?? "unknown"}`,
+      `- Creator: ${info.uploader ?? info.channel ?? "unknown"}`,
+      `- Length: ${formatTime(duration)}`,
+      `- Transcript source: ${captions ? "the platform's captions" : segments.length ? "speech-to-text" : "none"}`,
+      "",
+      "## Caption / description",
+      String(info.description ?? "(none)").slice(0, 4000),
+      "",
+      "## Frames",
+      ...(frames.length ? frames.map((f) => `- ${f.file} at about ${formatTime(f.at)}`) : ["(none)"]),
+    ].join("\n"),
+  );
+  return { author: info.uploader ?? info.channel ?? null, transcript };
+}
+
+async function preparePage(item: Item, dir: string): Promise<Prepared> {
+  const res = await fetch(item.url, { headers: { "User-Agent": "Mozilla/5.0 (Takeaway personal reader)" }, redirect: "follow", signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) throw new Error(`The page returned HTTP ${res.status}.`);
+  const { title, text } = htmlToText(await res.text());
+  if (text.length < 200) throw new Error("Couldn't read this page. It may need a login or block automated readers.");
+  writeFileSync(join(dir, "page.txt"), text);
+  writeFileSync(join(dir, "context.md"), `# Saved article\n- URL: ${item.url}\n- Title: ${title ?? "unknown"}\n\nThe article text is in page.txt.`);
+  return { author: new URL(res.url).hostname.replace(/^www\./, ""), transcript: "" };
+}
+
+/** Speech-to-text fallback for videos without captions, if whisper-ctranslate2 is installed (pip install whisper-ctranslate2). */
+async function transcribe(dir: string, video: string): Promise<Segment[]> {
+  try {
+    await run("whisper-ctranslate2", ["--help"], { timeout: 30_000 });
+  } catch {
+    return [];
+  }
+  await run("ffmpeg", ["-hide_banner", "-loglevel", "error", "-i", join(dir, video), "-vn", "-ac", "1", "-ar", "16000", join(dir, "audio.wav")], { timeout: 5 * 60_000 });
+  await run("whisper-ctranslate2", [join(dir, "audio.wav"), "--model", "small", "--output_format", "vtt", "--output_dir", dir], { timeout: 30 * 60_000, maxBuffer: 16 * MB });
+  const out = join(dir, "audio.vtt");
+  return existsSync(out) ? parseVtt(readFileSync(out, "utf8")) : [];
+}
+
+async function extractFrames(dir: string, video: string, duration: number): Promise<Frame[]> {
+  const framesDir = join(dir, "frames");
+  mkdirSync(framesDir);
+  const every = frameInterval(duration);
+  await run("ffmpeg", ["-hide_banner", "-loglevel", "error", "-i", join(dir, video), "-vf", `fps=1/${every},scale=480:-2`, "-q:v", "4", join(framesDir, "f_%03d.jpg")], { timeout: 5 * 60_000 });
+  const all = readdirSync(framesDir)
+    .sort()
+    .map((file, i) => ({ file: `frames/${file}`, at: i * every, bytes: statSync(join(framesDir, file)).size }));
+  const kept = pickFrames(all);
+  const keep = new Set(kept.map((f) => f.file));
+  for (const f of all) if (!keep.has(f.file)) rmSync(join(dir, f.file));
+  return kept;
+}
+
+async function askClaude(claude: string, dir: string, collections: Collection[], recent: { id: string; title: string | null; takeaway: string | null }[]): Promise<Notes> {
+  const prompt = [
+    readFileSync(new URL("./prompt.md", import.meta.url), "utf8"),
+    "## Your collections",
+    ...collections.map((c) => `- ${c.name}`),
+    "",
+    "## Earlier saves (for connections)",
+    ...(recent.length ? recent.map((r) => `- ${r.id}: ${r.title ?? "untitled"}: ${r.takeaway ?? ""}`) : ["(none yet)"]),
+  ].join("\n");
+
+  // Read-only and isolated: no shell or code tools, files limited to this folder, no personal hooks, plugins or MCP servers.
+  const args = ["-p", "--output-format", "json", "--json-schema", JSON.stringify(notesJsonSchema()), "--allowedTools", "Read",
+    "--permission-mode", "dontAsk", "--restricted", "--setting-sources", "project", "--strict-mcp-config", "--no-session-persistence"];
+  if (process.env.TAKEAWAY_MODEL) args.push("--model", process.env.TAKEAWAY_MODEL);
+
+  const stdout = await new Promise<string>((resolve, reject) => {
+    const child = spawn(claude, args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"] });
+    let out = "";
+    let err = "";
+    const timer = setTimeout(() => child.kill(), 15 * 60_000);
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve(out);
+      else reject(new Error(`Claude Code exited with ${code}: ${(err || out).slice(0, 300)}`));
+    });
+    child.stdin.end(prompt);
+  });
+  const result = JSON.parse(stdout);
+  if (result.is_error) throw new Error(`Claude Code: ${String(result.result).slice(0, 300)}`);
+  return NotesSchema.parse(result.structured_output);
+}
+
+async function collectionId(name: string, collections: Collection[]): Promise<string | null> {
+  const existing = collections.find((c) => c.name.toLowerCase() === name.trim().toLowerCase());
+  if (existing) return existing.id;
+  const { data } = await supabase
+    .from("takeaway_collections")
+    .insert({ name: name.trim(), suggested: !(DEFAULT_COLLECTIONS as readonly string[]).includes(name.trim()) })
+    .select("id")
+    .single();
+  return data?.id ?? null;
+}
+
+/** Push notification through ntfy (free Android app). The topic name works like a password: make it long and random. */
+async function notify(id: string, title: string, message: string) {
+  const topic = process.env.NTFY_TOPIC;
+  if (!topic) return;
+  const appUrl = process.env.TAKEAWAY_APP_URL;
+  await fetch("https://ntfy.sh", {
+    method: "POST",
+    body: JSON.stringify({ topic, title: title.slice(0, 120), message: message.slice(0, 300), ...(appUrl ? { click: `${appUrl}/i/${id}` } : {}) }),
+  }).catch((err) => log(`Notification failed: ${err}`));
+}
+
+/** Claude Code: CLAUDE_BIN, then `claude` on PATH, then the newest copy bundled with the VS Code extension. */
+function findClaude(): string {
+  if (process.env.CLAUDE_BIN) return process.env.CLAUDE_BIN;
+  const exe = process.platform === "win32" ? "claude.exe" : "claude";
+  for (const dir of (process.env.PATH ?? "").split(process.platform === "win32" ? ";" : ":")) {
+    if (dir && existsSync(join(dir, exe))) return join(dir, exe);
+  }
+  const extensions = join(homedir(), ".vscode", "extensions");
+  const bundled = existsSync(extensions)
+    ? readdirSync(extensions)
+        .filter((d) => d.startsWith("anthropic.claude-code-"))
+        .map((d) => join(extensions, d, "resources", "native-binary", exe))
+        .filter((p) => existsSync(p))
+        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+    : [];
+  if (bundled[0]) return bundled[0];
+  throw new Error("Claude Code isn't installed. Install it (npm install -g @anthropic-ai/claude-code) or set CLAUDE_BIN.");
+}
+
+const log = (message: string) => console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
+
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+});
