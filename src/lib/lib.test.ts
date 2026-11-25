@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectPlatform, extractUrl } from "./links";
-import { formatTime, frameInterval, looksLikeVideo, parseVtt, pickFrames, transcriptText } from "./media";
+import { downloadError, formatTime, frameInterval, looksLikeVideo, parseVtt, pickFrames, transcriptText } from "./media";
 import { notesJsonSchema, NotesSchema } from "./notes";
 
 describe("links", () => {
@@ -95,6 +95,23 @@ describe("looksLikeVideo", () => {
     expect(looksLikeVideo({ extractor_key: "Generic", duration: 120 })).toBe(false);
     expect(looksLikeVideo({ extractor_key: "Instagram", formats: [{ vcodec: "none" }] })).toBe(false);
     expect(looksLikeVideo(null)).toBe(false);
+  });
+});
+
+describe("downloadError", () => {
+  it("says a login is needed when Instagram hides the reel", () => {
+    const err = "ERROR: [Instagram] DgKJdqhoEpX: Instagram sent an empty media response. Check if this post is accessible in your browser without being logged-in.";
+    expect(downloadError("instagram", err)).toBe("Instagram only shows this to logged-in users, so your laptop couldn't download it.");
+  });
+
+  it("names the platform for other download failures", () => {
+    expect(downloadError("tiktok", "ERROR: [TikTok] 123: Unable to download webpage: HTTP Error 503")).toBe(
+      "TikTok wouldn't let your laptop download this right now. Try again later.",
+    );
+  });
+
+  it("leaves ordinary web pages to the page reader", () => {
+    expect(downloadError("web", "ERROR: Unsupported URL: https://example.com/post")).toBeNull();
   });
 });
 

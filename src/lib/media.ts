@@ -1,3 +1,5 @@
+import type { Platform } from "./links";
+
 /** 75.4 → "1:15", 3725 → "1:02:05". */
 export function formatTime(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
@@ -103,6 +105,21 @@ export interface VideoMeta {
 export function looksLikeVideo<T extends VideoMeta>(info: T | null): info is T {
   if (!info || info.extractor_key === "Generic") return false;
   return Number(info.duration) > 0 || (info.formats ?? []).some((f) => Boolean(f.vcodec) && f.vcodec !== "none");
+}
+
+const PLATFORM_NAMES: Partial<Record<Platform, string>> = { tiktok: "TikTok", youtube: "YouTube", instagram: "Instagram", x: "X" };
+
+/**
+ * A plain reason for a failed yt-dlp download on a video platform. Returns null for ordinary web pages,
+ * which go to the page reader instead (reading a video platform's page never works without a login).
+ */
+export function downloadError(platform: Platform, ytdlpError: string): string | null {
+  const name = PLATFORM_NAMES[platform];
+  if (!name) return null;
+  if (/logged-in|log in|login|cookies|private|empty media response/i.test(ytdlpError)) {
+    return `${name} only shows this to logged-in users, so your laptop couldn't download it.`;
+  }
+  return `${name} wouldn't let your laptop download this right now. Try again later.`;
 }
 
 /** One frame every few seconds, so short clips get detail and long videos stay within budget. */

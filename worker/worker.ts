@@ -6,7 +6,8 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
+import type { Platform } from "../src/lib/links";
+import { downloadError, formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
 import { AnswerSchema, answerJsonSchema, saveToMarkdown, searchTerms, type SaveForAsk } from "../src/lib/ask";
 import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
 import { CardsSchema, cardsJsonSchema } from "../src/lib/recall";
@@ -143,6 +144,7 @@ async function processItem(item: Item, claude: string) {
     const message = err instanceof Error ? err.message : String(err);
     log(`Failed: ${message}`);
     await supabase.from("takeaway_items").update({ status: "failed", error: message.slice(0, 500) }).eq("id", item.id);
+    await notify(`/i/${item.id}`, "Couldn't make notes", message);
   } finally {
     rmSync(dir, { recursive: true, force: true }); // never keep downloaded videos
   }
@@ -154,7 +156,10 @@ async function prepare(item: Item, dir: string): Promise<Prepared> {
   try {
     const { stdout } = await run("yt-dlp", ["--dump-single-json", "--no-warnings", "--no-playlist", item.url], { timeout: 120_000, maxBuffer: 64 * MB });
     info = JSON.parse(stdout) as VideoInfo;
-  } catch {
+  } catch (err) {
+    // On a video platform the page reader can't help, so say why the download failed instead.
+    const reason = downloadError(item.platform as Platform, String((err as { stderr?: string }).stderr || err));
+    if (reason) throw new Error(reason);
     info = null;
   }
   if (!looksLikeVideo(info)) return preparePage(item, dir);
