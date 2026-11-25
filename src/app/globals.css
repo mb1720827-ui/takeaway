@@ -1,26 +1,118 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tracklist: every save reads like a cassette J-card. Flat colour only: no gradients, glows or drop shadows. */
+@theme {
+  --color-ground: #f1f2f6;
+  --color-ink: #161833;
+  --color-muted: #5a5e7a;
+  --color-rule: #e3e5ee;
+  /* White on tape indigo is 9.4:1. */
+  --color-tape: #3436a8;
+  --color-tape-deep: #282a8c;
+  --color-on-tape: #d9daf5;
+  --color-wash: #e8e9f6;
+  --color-wash-hover: #dadcf2;
+  /* Input and choice borders, 3.2:1 on white. */
+  --color-field: #8a8ea8;
+  /* The red REC dot: only for saves being recorded (processed). */
+  --color-rec: #e5484d;
+  /* Applied: Stride's green, the family's colour for "done". */
+  --color-applied: #0b7a45;
+  --color-risk: #b42318;
+  --color-risk-soft: #fbe9e7;
+
+  --font-sans: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-tape);
+  color: #fff;
+}
+
+input,
+textarea,
+select {
+  caret-color: var(--color-tape);
+}
+
+/* In the base layer so a component can override it (text boxes show focus with their border instead). */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--color-tape);
+    outline-offset: 2px;
+  }
+  .on-tape :focus-visible {
+    outline-color: #fff;
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b7bad0 transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Anything you press answers the thumb immediately. */
+.press {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* The REC dot breathes while a save is being recorded. */
+@keyframes rec {
+  50% {
+    opacity: 0.35;
+  }
+}
+.rec-dot {
+  animation: rec 1400ms ease-in-out infinite;
+}
+
+/* A save that has just finished arrives in place: one short flip from REC to ready. */
+@keyframes arrive {
+  from {
+    transform: rotateX(-70deg);
+    opacity: 0;
+  }
+}
+.arrive {
+  transform-origin: top;
+  animation: arrive 360ms var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot,
+  .arrive {
+    animation: none;
+  }
+  .press {
+    transition: none;
+  }
+  .press:active {
+    transform: none;
+  }
 }

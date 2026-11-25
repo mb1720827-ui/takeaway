@@ -1,0 +1,484 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-26T00:00:00+00:00",
+  "title": "Design System: Takeaway",
+  "extensions": {
+    "colorMeta": {
+      "tape": {
+        "role": "primary",
+        "displayName": "Tape Indigo",
+        "canonical": "#3436a8",
+        "tonalRamp": [
+          "#07091a",
+          "#1c214c",
+          "#333c84",
+          "#4d58c2",
+          "#6f7fe2",
+          "#9aa9f2",
+          "#c3cefe",
+          "#e9eeff"
+        ]
+      },
+      "tape-deep": {
+        "role": "primary",
+        "displayName": "Deep Tape",
+        "canonical": "#282a8c",
+        "tonalRamp": [
+          "#070a18",
+          "#1c2248",
+          "#343e7d",
+          "#4e5bb8",
+          "#7181d9",
+          "#9baaea",
+          "#c4cff9",
+          "#e9eeff"
+        ]
+      },
+      "on-tape": {
+        "role": "primary",
+        "displayName": "Label Lavender",
+        "canonical": "#d9daf5",
+        "tonalRamp": [
+          "#0b0b0e",
+          "#25252e",
+          "#434352",
+          "#636479",
+          "#86879c",
+          "#acacbc",
+          "#cfd0da",
+          "#eeeef3"
+        ]
+      },
+      "rec": {
+        "role": "secondary",
+        "displayName": "Recording Red",
+        "canonical": "#e5484d",
+        "tonalRamp": [
+          "#190404",
+          "#480f11",
+          "#7c1b21",
+          "#b62731",
+          "#da5959",
+          "#ef908b",
+          "#febfbb",
+          "#ffe8e7"
+        ]
+      },
+      "applied": {
+        "role": "secondary",
+        "displayName": "Applied Green",
+        "canonical": "#0b7a45",
+        "tonalRamp": [
+          "#040e07",
+          "#0c2e1a",
+          "#155230",
+          "#1e7948",
+          "#509c6d",
+          "#89bc99",
+          "#badbc4",
+          "#e2f4e7"
+        ]
+      },
+      "risk": {
+        "role": "tertiary",
+        "displayName": "Signal Red",
+        "canonical": "#b42318",
+        "tonalRamp": [
+          "#180504",
+          "#46120d",
+          "#7a2119",
+          "#b23125",
+          "#d65f50",
+          "#eb9385",
+          "#fbc1b7",
+          "#ffe9e5"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Cassette Ink",
+        "canonical": "#161833",
+        "tonalRamp": [
+          "#0a0b10",
+          "#242532",
+          "#404358",
+          "#5f6482",
+          "#8387a4",
+          "#a9acc2",
+          "#ced0de",
+          "#edeef6"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Label Grey",
+        "canonical": "#5a5e7a",
+        "tonalRamp": [
+          "#0a0b0f",
+          "#242630",
+          "#414456",
+          "#60647e",
+          "#8387a0",
+          "#aaadbf",
+          "#ced0dc",
+          "#edeef5"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "J-Card Grey",
+        "canonical": "#f1f2f6",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#444547",
+          "#656669",
+          "#88898c",
+          "#adaeb0",
+          "#d0d1d2",
+          "#eeeeef"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Label White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "wash": {
+        "role": "neutral",
+        "displayName": "Tape Wash",
+        "canonical": "#e8e9f6",
+        "tonalRamp": [
+          "#0b0b0d",
+          "#26262a",
+          "#44444b",
+          "#64656f",
+          "#878892",
+          "#adadb5",
+          "#d0d0d5",
+          "#eeeef1"
+        ]
+      },
+      "wash-hover": {
+        "role": "neutral",
+        "displayName": "Pressed Wash",
+        "canonical": "#dadcf2",
+        "tonalRamp": [
+          "#0b0b0e",
+          "#25262d",
+          "#434450",
+          "#636476",
+          "#868899",
+          "#acadb9",
+          "#cfd0d8",
+          "#eeeef2"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Faint Rule",
+        "canonical": "#e3e5ee",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262629",
+          "#44454a",
+          "#64666d",
+          "#878990",
+          "#acaeb3",
+          "#d0d1d4",
+          "#eeeef0"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field Edge",
+        "canonical": "#8a8ea8",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#24262f",
+          "#414453",
+          "#61647b",
+          "#84889d",
+          "#aaadbd",
+          "#ced0db",
+          "#edeef4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The screen title in the indigo band: \"Saves\", a save's title, a collection name."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The recall question; one per screen."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section titles, Settings step titles, the Ask prompt label."
+      },
+      "takeaway": {
+        "displayName": "Takeaway",
+        "purpose": "The one-line takeaway at the top of a save and each Review card."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, track text, input values, the recall answer."
+      },
+      "body-strong": {
+        "displayName": "Body Strong",
+        "purpose": "Save and collection titles in rows, concept terms, button text."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "The two-line takeaway preview under a save title, prompt and connection reasons."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Zero-padded track numbers in Tape Indigo; counts at 1.125rem."
+      },
+      "numeral-small": {
+        "displayName": "Numeral Small",
+        "purpose": "Running times in Label Grey; \"No.N\" in the number column and band label."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "The band's guide line, form labels, quiet buttons, error and status text."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "The source line under a save: \"TikTok ∙ Software Architecture ∙ No.4\"."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Default curve: the press scale and the arrive flip."
+      },
+      {
+        "name": "press",
+        "value": "transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease; :active { transform: scale(0.97) }",
+        "purpose": "Every tappable element answers the thumb."
+      },
+      {
+        "name": "rec",
+        "value": "@keyframes rec { 50% { opacity: 0.35 } } 1400ms ease-in-out infinite",
+        "purpose": "The REC dot breathes while the laptop records a save or writes an answer; the only loop."
+      },
+      {
+        "name": "arrive",
+        "value": "@keyframes arrive { from { transform: rotateX(-70deg); opacity: 0 } } 360ms var(--ease-out) both; transform-origin: top",
+        "purpose": "A save that finished processing in the last two minutes flips into place once in the save list."
+      },
+      {
+        "name": "chevron-turn",
+        "value": "transform 150ms cubic-bezier(0.4, 0, 0.2, 1); rotate(90deg) when open",
+        "purpose": "The transcript disclosure chevron turns as it opens."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) { .rec-dot, .arrive { animation: none } .press { transition: none } .press:active { transform: none } } plus motion-reduce:transition-none on the chevron",
+        "purpose": "Reduced motion removes the breathe, the flip, the press scale and its transitions, and the chevron's turn transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "The bottom tab bar becomes a 64px top bar with the wordmark; the band gains 64px top padding; main bottom padding drops from 128px to 64px."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Tape Indigo, white 800 text. The one filled action in a row: Ask, Make token, Show answer, Reviewed, the save-a-link arrow.",
+      "html": "<button class=\"ds-btn-primary\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg>Save link</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: var(--color-tape, #3436a8); color: #fff; padding: 12px 20px; font: 800 1rem/1.5 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); cursor: pointer; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-btn-primary:hover { background: var(--color-tape-deep, #282a8c); } .ds-btn-primary:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: 0.6; } .ds-btn-primary svg { width: 20px; height: 20px; } @media (prefers-reduced-motion: reduce) { .ds-btn-primary { transition: none; } .ds-btn-primary:active { transform: none; } }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Tape Wash, ink 800 text: Retry, Move, Later, Create account, Open the original.",
+      "html": "<button class=\"ds-btn-secondary\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 4.5h5.5V10M19.5 4.5L11 13M18 14v5.5H4.5V6H10\"/></svg>Open the original</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: var(--color-wash, #e8e9f6); color: var(--color-ink, #161833); padding: 10px 16px; font: 800 1rem/1.5 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); cursor: pointer; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-btn-secondary:hover { background: var(--color-wash-hover, #dadcf2); } .ds-btn-secondary:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-btn-secondary:active { transform: scale(0.97); } .ds-btn-secondary:disabled { opacity: 0.6; } .ds-btn-secondary svg { width: 16px; height: 16px; } @media (prefers-reduced-motion: reduce) { .ds-btn-secondary { transition: none; } .ds-btn-secondary:active { transform: none; } }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "No fill, Label Grey 600 text, set apart at the end of a screen: Sign out, and Delete this save in Signal Red.",
+      "html": "<button class=\"ds-btn-quiet ds-btn-quiet-risk\">Delete this save</button>",
+      "css": ".ds-btn-quiet { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 8px; background: transparent; color: var(--color-muted, #5a5e7a); padding: 6px 8px; font: 600 0.875rem/1.4286 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); cursor: pointer; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-btn-quiet:hover { background: var(--color-wash, #e8e9f6); color: var(--color-ink, #161833); } .ds-btn-quiet-risk, .ds-btn-quiet-risk:hover { color: var(--color-risk, #b42318); } .ds-btn-quiet:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-btn-quiet:active { transform: scale(0.97); } @media (prefers-reduced-motion: reduce) { .ds-btn-quiet { transition: none; } .ds-btn-quiet:active { transform: none; } }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White, 2px Field Edge border, 12px corners; the border turns Tape Indigo on focus. Shown as the search field.",
+      "html": "<form role=\"search\" class=\"ds-search\"><svg class=\"ds-search-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6\"/><path d=\"M15 15l5 5\"/></svg><input class=\"ds-input\" type=\"search\" placeholder=\"Search everything you've saved\" aria-label=\"Search your saves\"></form>",
+      "css": ".ds-search { position: relative; } .ds-search-icon { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--color-muted, #5a5e7a); pointer-events: none; } .ds-input { width: 100%; box-sizing: border-box; border: 2px solid var(--color-field, #8a8ea8); border-radius: 12px; background: #fff; color: var(--color-ink, #161833); padding: 12px 14px 12px 44px; font: 400 1rem/1.5 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); caret-color: var(--color-tape, #3436a8); outline: none; transition: border-color 150ms ease; } .ds-input::placeholder { color: var(--color-muted, #5a5e7a); } .ds-input:focus { border-color: var(--color-tape, #3436a8); }"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab-bar",
+      "description": "Fixed white bottom bar on phones: Home, Review, Recall, Ask, Settings; 24px icon over a 12px label, active in Tape Indigo 800.",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"Main\"><a href=\"#\" class=\"ds-tab\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"5\" width=\"17\" height=\"14\" rx=\"2\"/><circle cx=\"9\" cy=\"12\" r=\"2\"/><circle cx=\"15\" cy=\"12\" r=\"2\"/><path d=\"M7 19l1.5-3h7l1.5 3\"/></svg>Home</a><a href=\"#\" class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6.5h16M4 12h16M4 17.5h10\"/></svg>Review</a><a href=\"#\" class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"4\" y=\"6\" width=\"13\" height=\"14\" rx=\"2\"/><path d=\"M8 3h10a2 2 0 0 1 2 2v12\"/></svg>Recall</a><a href=\"#\" class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 5h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 5z\"/></svg>Ask</a><a href=\"#\" class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h9M17 7h3M4 17h3M11 17h9\"/><circle cx=\"15\" cy=\"7\" r=\"2\"/><circle cx=\"9\" cy=\"17\" r=\"2\"/></svg>Settings</a></nav>",
+      "css": ".ds-tabs { display: flex; align-items: center; background: #fff; border-top: 1px solid var(--color-rule, #e3e5ee); padding: 6px 8px 10px; } .ds-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 12px; padding: 6px 0; font: 600 0.75rem/1.333 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-muted, #5a5e7a); text-decoration: none; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-tab:hover { color: var(--color-ink, #161833); } .ds-tab[aria-current=page] { color: var(--color-tape, #3436a8); font-weight: 800; } .ds-tab svg { width: 24px; height: 24px; } .ds-tab:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-tab:active { transform: scale(0.97); } @media (prefers-reduced-motion: reduce) { .ds-tab { transition: none; } .ds-tab:active { transform: none; } }"
+    },
+    {
+      "name": "Header Band",
+      "kind": "custom",
+      "refersTo": "header-band",
+      "description": "Opens every signed-in screen: back link (or the wordmark on Home), the display title, the guide line; a save's band carries its No.N label.",
+      "html": "<header class=\"ds-band\"><a href=\"#\" class=\"ds-band-back\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5.5L8.5 12l6.5 6.5\"/></svg>Software Architecture</a><h1 class=\"ds-band-title\">Why message queues make apps feel faster</h1><div class=\"ds-band-guide\"><span class=\"ds-no\">No.4</span>TikTok ∙ by a creator</div></header>",
+      "css": ".ds-band { background: var(--color-tape, #3436a8); color: #fff; padding: 20px 20px 24px; font-family: var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); } .ds-band-back { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 12px -8px; border-radius: 8px; padding: 4px 8px; font: 600 0.875rem/1.4286 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-on-tape, #d9daf5); text-decoration: none; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-band-back svg { width: 20px; height: 20px; } .ds-band-back:hover { background: var(--color-tape-deep, #282a8c); } .ds-band-back:focus-visible { outline: 3px solid #fff; outline-offset: 2px; } .ds-band-back:active { transform: scale(0.97); } .ds-band-title { margin: 0; padding-top: 4px; font: 800 1.875rem/1.08 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); letter-spacing: -0.02em; text-wrap: balance; } .ds-band-guide { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: 600 0.875rem/1.4286 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-on-tape, #d9daf5); } .ds-no { background: #fff; color: var(--color-tape, #3436a8); border-radius: 5px; padding: 0 6px; font-weight: 800; font-variant-numeric: tabular-nums; } @media (prefers-reduced-motion: reduce) { .ds-band-back { transition: none; } .ds-band-back:active { transform: none; } }"
+    },
+    {
+      "name": "Filter Tabs",
+      "kind": "chip",
+      "refersTo": "filter-tab-active",
+      "description": "A white track of four equal options on collection and All saves screens; the current one filled Tape Indigo.",
+      "html": "<nav class=\"ds-filter\" aria-label=\"Filter\"><a href=\"#\" aria-current=\"page\">All</a><a href=\"#\">New</a><a href=\"#\">Reviewed</a><a href=\"#\">Applied</a></nav>",
+      "css": ".ds-filter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #fff; border-radius: 12px; padding: 4px; } .ds-filter a { border-radius: 8px; padding: 8px 0; text-align: center; font: 800 0.875rem/1.4286 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-muted, #5a5e7a); text-decoration: none; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-filter a:hover { color: var(--color-ink, #161833); } .ds-filter a[aria-current=page] { background: var(--color-tape, #3436a8); color: #fff; } .ds-filter a:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-filter a:active { transform: scale(0.97); } @media (prefers-reduced-motion: reduce) { .ds-filter a { transition: none; } .ds-filter a:active { transform: none; } }"
+    },
+    {
+      "name": "Tracklist",
+      "kind": "custom",
+      "refersTo": "track-number",
+      "description": "Key points as a J-card tracklist: 36px zero-padded number column, the text, 48px right-aligned running time.",
+      "html": "<ol class=\"ds-tracks\"><li><span class=\"ds-tn\">01</span><span>Don't process heavy work inside the request</span><span class=\"ds-tt\">0:04</span></li><li><span class=\"ds-tn\">02</span><span>Put a job on a queue and return at once</span><span class=\"ds-tt\">0:21</span></li><li><span class=\"ds-tn\">03</span><span>A worker pulls jobs and retries failures with backoff</span><span class=\"ds-tt\">0:48</span></li></ol>",
+      "css": ".ds-tracks { list-style: none; margin: 0; padding: 0; background: #fff; border-radius: 16px; overflow: hidden; font: 400 1rem/1.375 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-ink, #161833); } .ds-tracks li { display: grid; grid-template-columns: 36px minmax(0, 1fr) 48px; column-gap: 8px; padding: 12px 16px; } .ds-tracks li + li { border-top: 1px solid var(--color-rule, #e3e5ee); } .ds-tn { font-weight: 800; color: var(--color-tape, #3436a8); font-variant-numeric: tabular-nums; } .ds-tt { text-align: right; font-size: 0.875rem; font-weight: 800; color: var(--color-muted, #5a5e7a); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Save Row",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Saves as rows in a white panel: title with the new dot, two-line takeaway, source line with collection and No.N; applied in green.",
+      "html": "<ul class=\"ds-saves\"><li><a href=\"#\"><span class=\"ds-save-top\"><span class=\"ds-save-title\">Why message queues make apps feel faster</span><span class=\"ds-new\" role=\"img\" aria-label=\"New\"></span></span><span class=\"ds-save-take\">Put slow work on a queue so the user never waits; a worker does it in the background and retries.</span><span class=\"ds-save-src\">TikTok ∙ Software Architecture ∙ No.4</span></a></li><li><a href=\"#\"><span class=\"ds-save-top\"><span class=\"ds-save-title\">Docker in 60 seconds</span></span><span class=\"ds-save-take\">A container packages your app with everything it needs.</span><span class=\"ds-save-src\">TikTok ∙ Software Architecture ∙ No.1<b> ∙ applied</b></span></a></li></ul>",
+      "css": ".ds-saves { list-style: none; margin: 0; padding: 0; background: #fff; border-radius: 16px; overflow: hidden; font-family: var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-ink, #161833); } .ds-saves li + li { border-top: 1px solid var(--color-rule, #e3e5ee); } .ds-saves a { display: block; padding: 14px 16px; color: inherit; text-decoration: none; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-saves a:hover { background: rgb(241 242 246 / 0.6); } .ds-saves a:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-saves a:active { transform: scale(0.97); } .ds-save-top { display: flex; align-items: flex-start; gap: 8px; } .ds-save-title { flex: 1; min-width: 0; font: 800 1rem/1.375 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); } .ds-new { margin-top: 6px; width: 8px; height: 8px; flex-shrink: 0; border-radius: 9999px; background: var(--color-tape, #3436a8); } .ds-save-take { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; font-size: 0.875rem; line-height: 1.375; color: var(--color-muted, #5a5e7a); } .ds-save-src { display: block; margin-top: 4px; font-size: 13px; color: var(--color-muted, #5a5e7a); } .ds-save-src b { font-weight: 600; color: var(--color-applied, #0b7a45); } @media (prefers-reduced-motion: reduce) { .ds-saves a { transition: none; } .ds-saves a:active { transform: none; } }"
+    },
+    {
+      "name": "Recording Row",
+      "kind": "custom",
+      "refersTo": "rec-dot",
+      "description": "Saves being processed: the breathing red REC dot (working), the still hollow ring (waiting), the red alert (failed) with Retry.",
+      "html": "<ul class=\"ds-rec\"><li><span class=\"ds-rec-dot\"></span><span class=\"ds-rec-text\"><b>https://vt.tiktok.com/speaking-tips/</b><span>Making notes ∙ TikTok</span></span></li><li><span class=\"ds-rec-wait\"></span><span class=\"ds-rec-text\"><b>https://youtu.be/system-design-101</b><span>Waiting for your laptop</span></span></li><li><svg class=\"ds-rec-alert\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3.5l9 16h-18z\"/><path d=\"M12 10v4M12 17v.5\"/></svg><span class=\"ds-rec-text\"><b>https://www.instagram.com/p/private-post/</b><span class=\"ds-rec-err\">This post is private, so it can't be downloaded.</span></span><button class=\"ds-rec-retry\">Retry</button></li></ul>",
+      "css": "@keyframes ds-rec { 50% { opacity: 0.35; } } .ds-rec { list-style: none; margin: 0; padding: 0; background: #fff; border-radius: 16px; overflow: hidden; font-family: var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); color: var(--color-ink, #161833); } .ds-rec li { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; } .ds-rec li + li { border-top: 1px solid var(--color-rule, #e3e5ee); } .ds-rec-dot, .ds-rec-wait { box-sizing: border-box; flex-shrink: 0; width: 10px; height: 10px; margin-top: 6px; border-radius: 9999px; } .ds-rec-dot { background: var(--color-rec, #e5484d); animation: ds-rec 1400ms ease-in-out infinite; } .ds-rec-wait { border: 2px solid var(--color-muted, #5a5e7a); } .ds-rec-alert { flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px; color: var(--color-risk, #b42318); } .ds-rec-text { flex: 1; min-width: 0; } .ds-rec-text b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .ds-rec-text span { display: block; font-size: 0.875rem; color: var(--color-muted, #5a5e7a); } .ds-rec-text .ds-rec-err { color: var(--color-risk, #b42318); } .ds-rec-retry { border: 0; border-radius: 12px; background: var(--color-wash, #e8e9f6); color: var(--color-ink, #161833); padding: 6px 12px; font: 800 0.875rem/1.4286 var(--font-sans, Overpass, ui-sans-serif, system-ui, sans-serif); cursor: pointer; transition: transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 160ms ease, border-color 160ms ease; } .ds-rec-retry:hover { background: var(--color-wash-hover, #dadcf2); } .ds-rec-retry:focus-visible { outline: 3px solid var(--color-tape, #3436a8); outline-offset: 2px; } .ds-rec-retry:active { transform: scale(0.97); } @media (prefers-reduced-motion: reduce) { .ds-rec-dot { animation: none; } .ds-rec-retry { transition: none; } .ds-rec-retry:active { transform: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The J-Card",
+    "overview": "Every save is a tape you recorded, and Takeaway prints its J-card. A save's notes open with the one-line takeaway, then a tracklist: key points numbered 01, 02, 03 in an indigo column, the text beside them, and each running time right-aligned in a column of its own. Collections sit labelled on one shelf as rows with their counts, and every save inside one carries a catalogue number (\"No.4\"). A save that is still being processed shows a small red REC dot. The system refuses the read-later default of a thumbnail card feed; nothing here is an image grid.\n\nThe material is the printed cassette insert: a cool grey ground, deep indigo-navy ink, white label panels, and one tape-label indigo that carries the header band, the single filled action, track numbers, counts and the active tab. Overpass sets everything, at three weights, with heavy tabular numerals for numbers and times. Colour is flat. Depth comes from the indigo band over the grey ground and from white panels resting on it, never from shadows. The world shows in type, palette, density and the tracklist, never in renamed features: saves are \"saves\", collections are \"collections\", and the one borrowed word is \"Recording\" for a save being processed.\n\nDensity is calm and thumb-first. Visits last minutes, so each screen answers one thing: the band names the screen and gives a one-line guide (\"9 new to review ∙ 1 recording ∙ 1 waiting\"), and everything below is lists of rows in white panels. Takeaway shares Overpass, the 576px column, the band, the tab bar, the press response and the flat rule with its sibling Stride; the indigo, the tracklist and the REC dot are its own.",
+    "keyCharacteristics": [
+      "Notes read as a tracklist: zero-padded track numbers, the text, right-aligned running times, each in a fixed column.",
+      "Every save in a collection has a catalogue number, written \"No.N\" with no space.",
+      "One tape indigo does the work; the red REC dot means the laptop is working on this right now.",
+      "Flat colour on a cool grey ground; white panels; no shadows or gradients.",
+      "Overpass at 400, 600 and 800; tabular figures for every number; tracking only tightens.",
+      "One centred 576px column, an indigo band on every screen, a bottom tab bar on phones and a top bar on desktop.",
+      "Two authored motions (the REC breathe and the arrive flip), both switched off under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Tape Label Rule",
+        "body": "Tape Indigo carries the band, the single filled action, numbers and the current place. Text on it is Label White or Label Lavender only.",
+        "section": "colors"
+      },
+      {
+        "name": "The REC Rule",
+        "body": "Recording Red is the REC dot and nothing else: the laptop is working on this right now. Errors use Signal Red; done uses Applied Green.",
+        "section": "colors"
+      },
+      {
+        "name": "The Family Green Rule",
+        "body": "Applied Green means applied or done, and it is the one bridge to Stride. It never becomes a second brand colour on Takeaway screens.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Weights Rule",
+        "body": "Only 400, 600 and 800 are loaded. 400 is for reading, 600 for labels and the takeaway line, 800 for anything you scan for or act on: titles, numbers, times, buttons.",
+        "section": "typography"
+      },
+      {
+        "name": "The Plain Label Rule",
+        "body": "No eyebrows, kickers, uppercase labels or positive letter-spacing. Tracking only tightens: display (-0.02em), title (-0.01em) and the wordmark.",
+        "section": "typography"
+      },
+      {
+        "name": "The Centred Dot Rule",
+        "body": "Meta parts are joined by U+2219 \"∙\" with a space either side (\"Making notes ∙ TikTok\"). Overpass sets the usual middle dot (U+00B7) off-centre, so it is not used.",
+        "section": "typography"
+      },
+      {
+        "name": "The Catalogue Number Rule",
+        "body": "A save's number in its collection is written \"No.N\" with no space, counted oldest first (No.1 is the first save put there). In a list from one collection it sits in its own column; in a mixed list it follows the collection name (\"Software Architecture ∙ No.2\"), because the number means nothing without it. Tracks and setup steps are zero-padded (\"01\"); running times are right-aligned in their own column.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Column Rule",
+        "body": "Anything numbered uses fixed columns: 36px for track numbers, 40px for \"No.N\", 48px for running times, so numbers and times align from row to row and screen to screen.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Colour Rule",
+        "body": "No drop shadows, glows, blurs or gradients. A plane is lifted only by being lighter or darker than what it sits on.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Filled Action Rule",
+        "body": "An action row has at most one filled Tape Indigo button. Its neighbours are secondary (Tape Wash) or quiet.",
+        "section": "components"
+      },
+      {
+        "name": "The Set-Apart Rule",
+        "body": "Final or destructive actions are quiet buttons centred at the very end of the screen, apart from everything else: \"Delete this save\" in Signal Red, \"Sign out\" in Label Grey.",
+        "section": "components"
+      },
+      {
+        "name": "The Two Motions Rule",
+        "body": "The REC breathe and the arrive flip are the only authored motion. Everything else answers a touch (the 0.97 press, colour transitions, the transcript chevron turning 90°). Reduced-motion preferences switch off all of it: the breathe, the flip, the press scale and its transitions, and the chevron's turn transition.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** set notes as a tracklist: zero-padded numbers in a 36px Tape Indigo column, the text, and running times right-aligned in a 48px column.",
+      "**Do** write a save's number as \"No.N\" with no space, and in a mixed list only after its collection: \"Software Architecture ∙ No.2\".",
+      "**Do** join meta parts with U+2219 \"∙\" and a space either side: \"9 new to review ∙ 1 recording ∙ 1 waiting\".",
+      "**Do** set every number, count and time in Overpass 800 with tabular figures.",
+      "**Do** show \"the laptop is working on this\" with the breathing 10px REC dot, and \"waiting for the laptop\" with a still hollow 2px Label Grey ring, always next to words that say the same.",
+      "**Do** keep one filled Tape Indigo button per action row; make its neighbours secondary or quiet.",
+      "**Do** open every signed-in screen with the indigo band: a back link (or the wordmark on Home), the display title, and a one-line guide.",
+      "**Do** give every tappable element the press response: scale 0.97 over 160ms, removed under reduced motion.",
+      "**Do** keep focus visible: a 3px Tape Indigo outline at 2px offset, white inside the band; text fields show focus with a Tape Indigo border.",
+      "**Do** keep product words plain: saves, collections, Review, Recall, Ask."
+    ],
+    "donts": [
+      "**Don't** use Recording Red for anything but the REC dot: not for errors, badges, text or fills.",
+      "**Don't** use the U+00B7 middle dot as a separator; it sits off-centre in Overpass.",
+      "**Don't** write \"No. 4\", \"#4\" or \"No 4\".",
+      "**Don't** add eyebrow or kicker labels above headings, and don't set uppercase or letter-spaced labels.",
+      "**Don't** add drop shadows, glows, blurs or gradients.",
+      "**Don't** turn saves into a thumbnail card feed.",
+      "**Don't** rename features into cassette jargon; the world lives in type, palette and the tracklist.",
+      "**Don't** put a second filled button (Tape Indigo or Applied Green) in an action row."
+    ]
+  }
+}

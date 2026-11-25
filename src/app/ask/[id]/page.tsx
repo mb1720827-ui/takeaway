@@ -5,17 +5,15 @@ import { z } from "zod";
 import { AnswerSchema, parseBlocks, type Inline } from "@/lib/ask";
 import { requireUser } from "@/lib/auth";
 import { retryQuestion } from "../../actions";
-import { card, Header, Page } from "../../ui";
+import { Icon } from "../../icons";
+import { Page, panel, primaryButton, RecDot, SectionTitle } from "../../ui";
 import { AutoRefresh } from "./auto-refresh";
 
 export default function AnswerPage({ params }: PageProps<"/ask/[id]">) {
   return (
-    <Page>
-      <Header />
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <Answer params={params} />
-      </Suspense>
-    </Page>
+    <Suspense fallback={<Page title="Your answer" back={{ href: "/ask", label: "Ask" }}>{null}</Page>}>
+      <Answer params={params} />
+    </Suspense>
   );
 }
 
@@ -24,11 +22,13 @@ function Text({ parts }: { parts: Inline[] }) {
     <>
       {parts.map((p, i) =>
         p.code ? (
-          <code key={i} className="rounded bg-zinc-100 px-1 font-mono text-sm dark:bg-zinc-800">
+          <code key={i} className="rounded bg-wash px-1 font-mono text-sm">
             {p.text}
           </code>
         ) : p.bold ? (
-          <strong key={i}>{p.text}</strong>
+          <strong key={i} className="font-extrabold">
+            {p.text}
+          </strong>
         ) : (
           <span key={i}>{p.text}</span>
         ),
@@ -44,38 +44,33 @@ async function Answer({ params }: Pick<PageProps<"/ask/[id]">, "params">) {
   const { data: q } = await supabase.from("takeaway_questions").select("*").eq("id", id).maybeSingle();
   if (!q) notFound();
   const scopeParam = q.scope === "item" ? `item:${q.item_id}` : q.scope === "collection" ? `collection:${q.collection_id}` : "all";
-
-  const header = (
-    <section className={card}>
-      <p className="text-sm text-zinc-500">You asked</p>
-      <h1 className="mt-1 text-xl font-semibold">{q.question}</h1>
-    </section>
-  );
+  const back = { href: "/ask", label: "Ask" };
 
   if (q.status === "queued" || q.status === "answering") {
     return (
-      <>
-        {header}
-        <section className={`${card} text-zinc-600 dark:text-zinc-400`} role="status">
-          {q.status === "answering" ? "Reading your saves…" : "Waiting for your laptop's worker to pick this up…"} This page updates by itself.
+      <Page title={q.question} back={back} guide="You asked">
+        <section className={`${panel} flex items-center gap-3 p-4`} role="status">
+          <RecDot waiting={q.status === "queued"} />
+          <span className="text-muted">
+            {q.status === "answering" ? "Reading your saves…" : "Waiting for your laptop to pick this up…"} This page updates by itself.
+          </span>
         </section>
         <AutoRefresh />
-      </>
+      </Page>
     );
   }
 
   if (q.status === "failed") {
     return (
-      <>
-        {header}
-        <section className={`${card} flex flex-col gap-3`}>
-          <p className="text-rose-600">Couldn&apos;t answer this: {q.error}</p>
+      <Page title={q.question} back={back} guide="You asked">
+        <section className={`${panel} flex flex-col gap-3 p-4`}>
+          <p className="text-risk">Couldn&apos;t answer this: {q.error}</p>
           <form action={retryQuestion}>
             <input type="hidden" name="id" value={q.id} />
-            <button className="rounded-lg bg-violet-600 px-4 py-2 font-medium text-white">Try again</button>
+            <button className={primaryButton}>Try again</button>
           </form>
         </section>
-      </>
+      </Page>
     );
   }
 
@@ -86,16 +81,15 @@ async function Answer({ params }: Pick<PageProps<"/ask/[id]">, "params">) {
   const titles = new Map((rows ?? []).map((r) => [r.id, r.title ?? "A save"]));
 
   return (
-    <>
-      {header}
-      <section className={`${card} flex flex-col gap-3 leading-relaxed`}>
+    <Page title={q.question} back={back} guide="You asked">
+      <section className={`${panel} flex flex-col gap-3 p-4 leading-relaxed`}>
         {parseBlocks(answer.answer).map((block, i) =>
           block.kind === "p" ? (
-            <p key={i} className={block.heading ? "font-semibold" : undefined}>
+            <p key={i} className={block.heading ? "font-extrabold" : undefined}>
               <Text parts={block.parts} />
             </p>
           ) : block.kind === "ul" ? (
-            <ul key={i} className="flex list-disc flex-col gap-1 pl-5">
+            <ul key={i} className="flex list-disc flex-col gap-1 pl-5 marker:text-tape">
               {block.items.map((item, j) => (
                 <li key={j}>
                   <Text parts={item} />
@@ -103,7 +97,7 @@ async function Answer({ params }: Pick<PageProps<"/ask/[id]">, "params">) {
               ))}
             </ul>
           ) : (
-            <ol key={i} className="flex list-decimal flex-col gap-1 pl-5">
+            <ol key={i} className="flex list-decimal flex-col gap-1 pl-5 marker:font-extrabold marker:text-tape">
               {block.items.map((item, j) => (
                 <li key={j}>
                   <Text parts={item} />
@@ -115,16 +109,18 @@ async function Answer({ params }: Pick<PageProps<"/ask/[id]">, "params">) {
       </section>
 
       {answer.sources.length > 0 && (
-        <section className={card}>
-          <h2 className="mb-2 font-semibold">From your saves</h2>
-          <ul className="flex flex-col gap-2">
+        <section>
+          <SectionTitle>From your saves</SectionTitle>
+          <ul className={`${panel} divide-y divide-rule overflow-hidden`}>
             {answer.sources.map((s) => (
               <li key={s.id}>
-                <Link href={`/i/${s.id}`} className="font-medium underline">
-                  {titles.get(s.id) ?? "A save"}
+                <Link href={`/i/${s.id}`} className="press grid grid-cols-[minmax(0,1fr)_3rem] gap-x-2 px-4 py-3.5 hover:bg-ground/60">
+                  <span>
+                    <span className="block leading-snug font-extrabold">{titles.get(s.id) ?? "A save"}</span>
+                    <span className="mt-0.5 block text-sm leading-snug text-muted">{s.note}</span>
+                  </span>
+                  <span className="tnum pt-0.5 text-right text-sm font-extrabold text-muted">{s.at ?? ""}</span>
                 </Link>
-                {s.at && <span className="ml-1.5 font-mono text-xs text-zinc-500">{s.at}</span>}
-                <span className="block text-sm text-zinc-600 dark:text-zinc-400">{s.note}</span>
               </li>
             ))}
           </ul>
@@ -132,19 +128,18 @@ async function Answer({ params }: Pick<PageProps<"/ask/[id]">, "params">) {
       )}
 
       {answer.follow_ups.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-zinc-500">Ask next</h2>
-          {answer.follow_ups.map((f) => (
-            <Link
-              key={f}
-              href={`/ask?${new URLSearchParams({ q: f, scope: scopeParam })}`}
-              className="rounded-xl border border-zinc-300 px-4 py-2 hover:border-violet-500 dark:border-zinc-700"
-            >
-              {f}
-            </Link>
-          ))}
+        <section>
+          <SectionTitle>Ask next</SectionTitle>
+          <div className="flex flex-col gap-2">
+            {answer.follow_ups.map((f) => (
+              <Link key={f} href={`/ask?${new URLSearchParams({ q: f, scope: scopeParam })}`} className={`press flex items-center gap-3 ${panel} px-4 py-3 hover:bg-wash`}>
+                <span className="min-w-0 flex-1 leading-snug font-semibold">{f}</span>
+                <Icon name="arrow" className="size-5 text-tape" />
+              </Link>
+            ))}
+          </div>
         </section>
       )}
-    </>
+    </Page>
   );
 }

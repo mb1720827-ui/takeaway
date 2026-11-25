@@ -1,33 +1,32 @@
 import { headers } from "next/headers";
 import { Suspense, type ReactNode } from "react";
 import { requireUser } from "@/lib/auth";
-import { card, Header, Page } from "../ui";
+import { signOut } from "../actions";
+import { Page, panel, quietButton } from "../ui";
 import { TokenForm } from "./token-form";
 
 export default function SettingsPage() {
   return (
-    <Page>
-      <Header />
-      <h1 className="text-2xl font-bold tracking-tight">Set up</h1>
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <Settings />
-      </Suspense>
-    </Page>
+    <Suspense fallback={<Page title="Set up">{null}</Page>}>
+      <Settings />
+    </Suspense>
   );
 }
 
+// Setup really is a sequence, so the steps are numbered like tracks.
 function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
   return (
-    <section className={`${card} flex flex-col gap-3`}>
-      <h2 className="font-semibold">
-        {n}. {title}
-      </h2>
-      {children}
+    <section className={`${panel} grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-2 p-4`}>
+      <span className="tnum pt-0.5 text-lg font-extrabold text-tape">{String(n).padStart(2, "0")}</span>
+      <div className="flex min-w-0 flex-col gap-3">
+        <h2 className="text-lg leading-snug font-extrabold">{title}</h2>
+        {children}
+      </div>
     </section>
   );
 }
 
-const code = "rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm dark:bg-zinc-800";
+const code = "rounded bg-wash px-1.5 py-0.5 font-mono text-[13px]";
 
 async function Settings() {
   const { supabase, user } = await requireUser();
@@ -36,13 +35,13 @@ async function Settings() {
   const inbox = `${host.startsWith("localhost") ? "http" : "https"}://${host}/api/inbox`;
 
   return (
-    <>
-      <Step n={1} title="Create your inbox token">
+    <Page title="Set up" guide={user.email}>
+      <Step n={1} title="Make your inbox token">
         <TokenForm hasToken={Boolean(token)} />
       </Step>
 
       <Step n={2} title="Add “Save to Takeaway” to your Android share menu">
-        <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
+        <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed marker:font-extrabold marker:text-tape">
           <li>
             Install <strong>HTTP Shortcuts</strong> from the Play Store (free, open source).
           </li>
@@ -50,7 +49,7 @@ async function Settings() {
             Create a variable named <span className={code}>shared</span> and turn on <em>Allow receiving value from Share dialog</em>.
           </li>
           <li>
-            Create a shortcut named <strong>Save to Takeaway</strong>: method <span className={code}>POST</span>, URL <span className={code}>{inbox}</span>.
+            Create a shortcut named <strong>Save to Takeaway</strong>: method <span className={code}>POST</span>, URL <span className={`${code} wrap-anywhere`}>{inbox}</span>.
           </li>
           <li>
             Add a header <span className={code}>Authorization</span> with the value <span className={code}>Bearer YOUR_TOKEN</span>.
@@ -58,15 +57,15 @@ async function Settings() {
           <li>
             Set the body to custom text, content type <span className={code}>text/plain</span>, containing just the <span className={code}>shared</span> variable.
           </li>
-          <li>Under response handling, choose to show the response as a toast. You&apos;ll see &ldquo;Saved to Takeaway&rdquo;.</li>
+          <li>Under response handling, show the response as a toast. You&apos;ll see “Saved to Takeaway”.</li>
         </ol>
-        <p className="text-sm text-zinc-500">
-          Now in TikTok: Share → More (or Share to…) → HTTP Shortcuts → Save to Takeaway. Menu names can vary slightly between versions.
+        <p className="text-sm text-muted">
+          Then in TikTok: Share › More (or Share to…) › HTTP Shortcuts › Save to Takeaway. Menu names vary a little between versions.
         </p>
       </Step>
 
       <Step n={3} title="Get notified when notes are ready (optional)">
-        <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
+        <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed marker:font-extrabold marker:text-tape">
           <li>
             Install <strong>ntfy</strong> from the Play Store and subscribe to a long, random topic name only you know. Anyone with the name can read the
             notifications.
@@ -79,13 +78,17 @@ async function Settings() {
 
       <Step n={4} title="Run the worker on your laptop">
         <p className="text-sm leading-relaxed">
-          The worker turns saved links into notes using Claude Code, so it needs your laptop on. In the project folder, with{" "}
-          <span className={code}>TAKEAWAY_EMAIL</span> set to <span className={code}>{user.email}</span> and your password in{" "}
+          The worker turns saved links into notes with Claude Code, so your laptop needs to be on. In the project folder, with{" "}
+          <span className={code}>TAKEAWAY_EMAIL</span> set to <span className={`${code} wrap-anywhere`}>{user.email}</span> and your password in{" "}
           <span className={code}>.env.local</span>:
         </p>
-        <pre className="overflow-x-auto rounded-lg bg-zinc-900 p-3 text-sm text-zinc-100">npm run worker</pre>
-        <p className="text-sm text-zinc-500">It checks for new saves every minute. Needs Claude Code, yt-dlp and ffmpeg installed.</p>
+        <pre className="overflow-x-auto rounded-xl bg-ink p-3 text-sm text-white">npm run worker</pre>
+        <p className="text-sm text-muted">It checks for new saves every few seconds. It needs Claude Code, yt-dlp and ffmpeg.</p>
       </Step>
-    </>
+
+      <form action={signOut} className="flex justify-center">
+        <button className={quietButton}>Sign out</button>
+      </form>
+    </Page>
   );
 }

@@ -2,24 +2,29 @@
 
 import { useActionState } from "react";
 import { createInboxToken, type TokenState } from "../actions";
+import { primaryButton } from "../ui";
 
 export function TokenForm({ hasToken }: { hasToken: boolean }) {
   const [state, action, pending] = useActionState<TokenState>(createInboxToken, {});
   return (
-    <form action={action} className="flex flex-col gap-2">
+    <form action={action} className="flex flex-col gap-3">
       {state.token ? (
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium">Your inbox token (shown only once; copy it now):</p>
-          <code className="break-all rounded-lg bg-zinc-100 p-3 text-sm dark:bg-zinc-800">{state.token}</code>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold">Your inbox token. It&apos;s shown only once, so copy it now:</p>
+          <code className="rounded-xl bg-wash p-3 font-mono text-sm break-all">{state.token}</code>
         </div>
       ) : (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {hasToken ? "You have a token. Creating a new one stops the old one from working." : "Create a token for your phone's share shortcut."}
+        <p className="text-sm text-muted">
+          {hasToken ? "You have a token. Making a new one stops the old one from working." : "Make a token for your phone's share shortcut."}
         </p>
       )}
-      {state.error && <p role="alert" className="text-sm text-rose-600">{state.error}</p>}
-      <button disabled={pending} className="self-start rounded-lg bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-700 disabled:opacity-60">
-        {hasToken || state.token ? "Create a new token" : "Create token"}
+      {state.error && (
+        <p role="alert" className="text-sm font-semibold text-risk">
+          {state.error}
+        </p>
+      )}
+      <button disabled={pending} className={`${primaryButton} self-start`}>
+        {hasToken || state.token ? "Make a new token" : "Make token"}
       </button>
     </form>
   );

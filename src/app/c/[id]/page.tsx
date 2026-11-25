@@ -4,18 +4,21 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { renameCollection } from "../../actions";
-import { Badge, card, Header, ItemList, Page, type ItemRow } from "../../ui";
+import { Icon } from "../../icons";
+import { input, numberSaves, Page, panel, SaveList, secondaryButton, type ItemRow } from "../../ui";
 
-const FILTERS = ["all", "new", "reviewed", "applied"] as const;
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "new", label: "New" },
+  { value: "reviewed", label: "Reviewed" },
+  { value: "applied", label: "Applied" },
+] as const;
 
 export default function CollectionPage({ params, searchParams }: PageProps<"/c/[id]">) {
   return (
-    <Page>
-      <Header />
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <Collection params={params} searchParams={searchParams} />
-      </Suspense>
-    </Page>
+    <Suspense fallback={<Page title="Collection" back={{ href: "/", label: "Saves" }}>{null}</Page>}>
+      <Collection params={params} searchParams={searchParams} />
+    </Suspense>
   );
 }
 
@@ -23,64 +26,61 @@ async function Collection({ params, searchParams }: Pick<PageProps<"/c/[id]">, "
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const { status } = await searchParams;
-  const filter = FILTERS.find((f) => f === status) ?? "all";
+  const filter = FILTERS.find((f) => f.value === status)?.value ?? "all";
   const { supabase } = await requireUser();
-
-  let itemsQuery = supabase
-    .from("takeaway_items")
-    .select("id, url, platform, status, review_status, title, takeaway, collection_id, error, created_at")
-    .eq("collection_id", id)
-    .eq("status", "ready")
-    .order("created_at", { ascending: false });
-  if (filter !== "all") itemsQuery = itemsQuery.eq("review_status", filter);
 
   const [{ data: collection }, { data: items }] = await Promise.all([
     supabase.from("takeaway_collections").select("id, name, suggested").eq("id", id).maybeSingle(),
-    itemsQuery,
+    supabase
+      .from("takeaway_items")
+      .select("id, url, platform, status, review_status, title, takeaway, collection_id, error, created_at")
+      .eq("collection_id", id)
+      .eq("status", "ready")
+      .order("created_at", { ascending: false }),
   ]);
   if (!collection) notFound();
+  const all = (items ?? []) as ItemRow[];
+  const numbers = numberSaves(all);
+  const shown = filter === "all" ? all : all.filter((i) => i.review_status === filter);
+  const count = (s: string) => all.filter((i) => i.review_status === s).length;
 
   return (
-    <>
-      <section className={`${card} flex flex-col gap-3`}>
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          {collection.name}
-          {collection.suggested && <Badge tone="amber">suggested by AI</Badge>}
-        </h1>
-        <form action={renameCollection} className="flex gap-2">
-          <input type="hidden" name="id" value={collection.id} />
-          <input
-            name="name"
-            defaultValue={collection.name}
-            maxLength={60}
-            required
-            aria-label="Collection name"
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <button className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
-            {collection.suggested ? "Keep / rename" : "Rename"}
-          </button>
-        </form>
-        <Link href={`/ask?scope=collection:${collection.id}`} className="text-sm font-medium text-violet-700 underline dark:text-violet-400">
-          Ask about this collection
-        </Link>
-      </section>
-
-      <nav className="flex gap-1 text-sm">
+    <Page
+      title={collection.name}
+      back={{ href: "/", label: "Saves" }}
+      guide={`${all.length} ${all.length === 1 ? "save" : "saves"} ∙ ${count("new")} new ∙ ${count("applied")} applied${collection.suggested ? " ∙ suggested by AI" : ""}`}
+    >
+      <nav aria-label="Filter" className="grid grid-cols-4 gap-1 rounded-xl bg-white p-1">
         {FILTERS.map((f) => (
           <Link
-            key={f}
-            href={f === "all" ? `/c/${id}` : `/c/${id}?status=${f}`}
-            className={`rounded-full px-3 py-1 capitalize ${f === filter ? "bg-violet-600 text-white" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+            key={f.value}
+            href={f.value === "all" ? `/c/${id}` : `/c/${id}?status=${f.value}`}
+            aria-current={f.value === filter ? "page" : undefined}
+            className={`press rounded-lg py-2 text-center text-sm font-extrabold ${f.value === filter ? "bg-tape text-white" : "text-muted hover:text-ink"}`}
           >
-            {f}
+            {f.label}
           </Link>
         ))}
       </nav>
 
-      <section className={card}>
-        <ItemList items={(items ?? []) as ItemRow[]} empty="Nothing here yet." />
+      <SaveList items={shown} numbers={numbers} empty={filter === "all" ? "Nothing here yet." : `No ${filter} saves here.`} />
+
+      <section className={`${panel} flex flex-col gap-3 p-4`}>
+        <form action={renameCollection} className="flex flex-col gap-2">
+          <input type="hidden" name="id" value={collection.id} />
+          <label htmlFor="name" className="font-extrabold">
+            {collection.suggested ? "Keep or rename this collection" : "Rename"}
+          </label>
+          <div className="flex gap-2">
+            <input id="name" name="name" defaultValue={collection.name} maxLength={60} required className={`${input} min-w-0 flex-1 py-2.5`} />
+            <button className={secondaryButton}>{collection.suggested ? "Keep" : "Save"}</button>
+          </div>
+        </form>
+        <Link href={`/ask?scope=collection:${collection.id}`} className="press inline-flex items-center gap-2 self-start rounded-lg px-1 py-1 font-extrabold text-tape hover:underline">
+          <Icon name="ask" className="size-5" />
+          Ask about this collection
+        </Link>
       </section>
-    </>
+    </Page>
   );
 }

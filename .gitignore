@@ -47,3 +47,9 @@ worker.log*
 
 # worker state (daily reminder)
 .worker-state.json
+
+# Impeccable runtime files (screenshots, decision mocks); PRODUCT.md, DESIGN.md, .impeccable/surfaces and design.json are committed.
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/questions/
+.impeccable/hook.cache.json

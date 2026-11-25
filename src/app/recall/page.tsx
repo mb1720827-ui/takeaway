@@ -2,23 +2,15 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
-import { card, Header, Page } from "../ui";
+import { Icon } from "../icons";
+import { Page, panel, primaryButton } from "../ui";
 import { RecallCard } from "./recall-card";
 
 export default function RecallPage() {
   return (
-    <Page>
-      <Header />
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Recall</h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-          Try to answer before you look. Cards you know well come back less often.
-        </p>
-      </div>
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <Recall />
-      </Suspense>
-    </Page>
+    <Suspense fallback={<Page title="Recall">{null}</Page>}>
+      <Recall />
+    </Suspense>
   );
 }
 
@@ -40,37 +32,33 @@ async function Recall() {
   if (!current) {
     const next = upcoming?.[0]?.due_at;
     return (
-      <section className={`${card} text-center`}>
-        <p className="text-lg font-semibold">Nothing to recall right now.</p>
-        <p className="mt-1 text-zinc-500">
-          {next
-            ? `Next card: ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(next))}.`
-            : "Cards appear here a minute or two after your saves are processed."}
-        </p>
-        <Link href="/" className="mt-4 inline-block font-medium text-violet-700 underline dark:text-violet-400">
-          Back home
-        </Link>
-      </section>
+      <Page title="Recall" guide="Nothing to recall right now">
+        <section className="flex flex-col items-start gap-4 px-1">
+          <p className="text-lg font-semibold">
+            {next
+              ? `Next card: ${new Intl.DateTimeFormat("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(next))}.`
+              : "Cards appear a minute or two after your saves are processed."}
+          </p>
+          <Link href="/" className={primaryButton}>
+            Back to saves
+          </Link>
+        </section>
+      </Page>
     );
   }
 
   const item = Array.isArray(current.item) ? current.item[0] : current.item;
   return (
-    <>
-      <p className="text-sm text-zinc-500">
-        {count} card{count === 1 ? "" : "s"} due
-      </p>
-      <section className={card}>
+    <Page title="Recall" guide={`${count} ${count === 1 ? "card" : "cards"} due ∙ try before you look`}>
+      <section className={`${panel} p-5`}>
         <RecallCard key={current.id} id={current.id} question={current.question} answer={current.answer} />
       </section>
       {item && (
-        <p className="text-sm text-zinc-500">
-          From:{" "}
-          <Link href={`/i/${item.id}`} className="underline">
-            {item.title ?? "a save"}
-          </Link>
-        </p>
+        <Link href={`/i/${item.id}`} className="inline-flex items-center gap-1 self-start px-1 text-sm font-semibold text-muted hover:text-ink hover:underline">
+          From: {item.title ?? "a save"}
+          <Icon name="chevron" className="size-4" />
+        </Link>
       )}
-    </>
+    </Page>
   );
 }

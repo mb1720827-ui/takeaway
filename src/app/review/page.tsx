@@ -3,20 +3,18 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { NotesSchema } from "@/lib/notes";
 import { setReviewStatus } from "../actions";
-import { Badge, card, Header, Page } from "../ui";
+import { Icon } from "../icons";
+import { Page, panel, platformName, primaryButton, secondaryButton, SectionTitle } from "../ui";
 
 export default function ReviewPage({ searchParams }: PageProps<"/review">) {
   return (
-    <Page>
-      <Header />
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <Review searchParams={searchParams} />
-      </Suspense>
-    </Page>
+    <Suspense fallback={<Page title="Review">{null}</Page>}>
+      <Review searchParams={searchParams} />
+    </Suspense>
   );
 }
 
-/** One new item at a time, oldest first. "Later" skips it for this session only. */
+/** One new save at a time, oldest first. "Later" skips it for this session only. */
 async function Review({ searchParams }: Pick<PageProps<"/review">, "searchParams">) {
   const { supabase } = await requireUser();
   const { skip } = await searchParams;
@@ -35,63 +33,77 @@ async function Review({ searchParams }: Pick<PageProps<"/review">, "searchParams
 
   if (!item) {
     return (
-      <section className={`${card} text-center`}>
-        <p className="text-lg font-semibold">You&apos;re all caught up.</p>
-        <p className="mt-1 text-zinc-500">{skipped.length ? "Only the items you put off are left." : "New saves will appear here when they're ready."}</p>
-        <Link href={skipped.length ? "/review" : "/"} className="mt-4 inline-block font-medium text-violet-700 underline dark:text-violet-400">
-          {skipped.length ? "Start again" : "Back home"}
-        </Link>
-      </section>
+      <Page title="Review" guide={skipped.length ? "Only the saves you put off are left" : "You're all caught up"}>
+        <section className="flex flex-col items-start gap-4 px-1">
+          <p className="text-lg font-semibold">{skipped.length ? "You've seen everything except the ones you put off." : "Nothing new to review."}</p>
+          <p className="text-muted">New saves appear here when your laptop has made their notes.</p>
+          <Link href={skipped.length ? "/review" : "/"} className={primaryButton}>
+            {skipped.length ? "Start again" : "Back to saves"}
+          </Link>
+        </section>
+      </Page>
     );
   }
 
   const notes = NotesSchema.safeParse(item.notes).data;
   const later = `/review?skip=${[...skipped, item.id].join(",")}`;
+  const next = `/review${skipped.length ? `?skip=${skipped.join(",")}` : ""}`;
 
   return (
-    <>
-      <p className="text-sm text-zinc-500">{count} new to review</p>
-      <section className={`${card} flex flex-col gap-4`}>
-        <Badge>{item.platform}</Badge>
-        <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
-        <p className="rounded-xl bg-violet-50 p-4 text-lg leading-relaxed dark:bg-violet-950/50">{item.takeaway}</p>
-        {notes && notes.key_points.length > 0 && (
-          <ul className="flex list-disc flex-col gap-1.5 pl-5">
-            {notes.key_points.slice(0, 5).map((p, i) => (
-              <li key={i}>{p.text}</li>
-            ))}
-          </ul>
-        )}
-        {notes && notes.action_items.length > 0 && (
-          <div>
-            <h2 className="font-semibold">Try this</h2>
-            <ul className="mt-1 flex flex-col gap-1">
-              {notes.action_items.map((a, i) => (
-                <li key={i}>☐ {a}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <Link href={`/i/${item.id}`} className="text-sm font-medium text-violet-700 underline dark:text-violet-400">
-          Full breakdown and transcript
-        </Link>
+    <Page title={item.title} guide={`${skipped.length + 1} of ${(count ?? 0) + skipped.length} new ∙ ${platformName(item.platform)}`}>
+      <section className={`${panel} p-4`}>
+        <p className="text-lg leading-relaxed font-semibold text-balance">{item.takeaway}</p>
       </section>
 
-      <div className="grid grid-cols-3 gap-2">
+      {notes && notes.key_points.length > 0 && (
+        <section>
+          <SectionTitle>Key points</SectionTitle>
+          <ol className={`${panel} divide-y divide-rule overflow-hidden`}>
+            {notes.key_points.slice(0, 5).map((p, i) => (
+              <li key={i} className="grid grid-cols-[2.25rem_minmax(0,1fr)_3rem] gap-x-2 px-4 py-3 leading-snug">
+                <span className="tnum font-extrabold text-tape">{String(i + 1).padStart(2, "0")}</span>
+                <span>{p.text}</span>
+                <span className="tnum text-right text-sm font-extrabold text-muted">{p.at ?? ""}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {notes && notes.action_items.length > 0 && (
+        <section>
+          <SectionTitle>Try this</SectionTitle>
+          <ul className={`${panel} divide-y divide-rule overflow-hidden`}>
+            {notes.action_items.map((a, i) => (
+              <li key={i} className="flex items-start gap-3 px-4 py-3 leading-snug">
+                <span aria-hidden="true" className="mt-0.5 size-5 shrink-0 rounded-md border-2 border-tape" />
+                {a}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Link href={`/i/${item.id}`} className="inline-flex items-center gap-1 self-start px-1 font-extrabold text-tape hover:underline">
+        Full notes and transcript
+        <Icon name="chevron" className="size-4" />
+      </Link>
+
+      <section className="grid grid-cols-[1fr_1fr_auto] gap-2">
         {(["reviewed", "applied"] as const).map((status) => (
           <form key={status} action={setReviewStatus}>
             <input type="hidden" name="id" value={item.id} />
             <input type="hidden" name="status" value={status} />
-            <input type="hidden" name="next" value={`/review${skipped.length ? `?skip=${skipped.join(",")}` : ""}`} />
-            <button className={`w-full rounded-xl px-4 py-3 font-semibold ${status === "applied" ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-violet-600 text-white hover:bg-violet-700"}`}>
-              {status === "applied" ? "Applied ✓" : "Reviewed"}
+            <input type="hidden" name="next" value={next} />
+            <button className={status === "applied" ? `${secondaryButton} w-full py-3.5` : `${primaryButton} w-full py-3.5`}>
+              {status === "applied" ? "Applied" : "Reviewed"}
             </button>
           </form>
         ))}
-        <Link href={later} className="rounded-xl border border-zinc-300 px-4 py-3 text-center font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
+        <Link href={later} className={`${secondaryButton} py-3.5`}>
           Later
         </Link>
-      </div>
-    </>
+      </section>
+    </Page>
   );
 }

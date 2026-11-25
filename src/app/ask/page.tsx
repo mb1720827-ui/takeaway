@@ -1,27 +1,21 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
-import { Badge, card, Header, Page } from "../ui";
+import { Icon } from "../icons";
+import { Page, panel, RecDot, SectionTitle } from "../ui";
 import { AskForm } from "./ask-form";
 
 export default function AskPage({ searchParams }: PageProps<"/ask">) {
   return (
-    <Page>
-      <Header />
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Ask your saves</h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-          Answers come only from what you&apos;ve saved, with links to the exact videos. Your laptop&apos;s worker answers within a minute.
-        </p>
-      </div>
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
+    <Page title="Ask your saves" guide="Answers come only from what you've saved, with links to the exact videos.">
+      <Suspense fallback={null}>
         <Ask searchParams={searchParams} />
       </Suspense>
     </Page>
   );
 }
 
-const statusTone = { queued: "amber", answering: "amber", answered: "applied", failed: "rose" } as const;
+const STATUS = { queued: "Waiting for your laptop", answering: "Reading your saves…", answered: "Answered", failed: "Couldn't answer" } as const;
 
 async function Ask({ searchParams }: Pick<PageProps<"/ask">, "searchParams">) {
   const { supabase } = await requireUser();
@@ -46,25 +40,33 @@ async function Ask({ searchParams }: Pick<PageProps<"/ask">, "searchParams">) {
 
   return (
     <>
-      <section className={card}>
+      <section className={`${panel} p-4`}>
         <AskForm initialQuestion={q} scope={scope} scopes={scopes} />
       </section>
-
-      <section className={card}>
-        <h2 className="mb-2 font-semibold">Your questions</h2>
+      <section>
+        <SectionTitle>Your questions</SectionTitle>
         {history && history.length > 0 ? (
-          <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {history.map((h) => (
-              <li key={h.id}>
-                <Link href={`/ask/${h.id}`} className="flex items-start justify-between gap-3 py-3 hover:opacity-80">
-                  <span>{h.question}</span>
-                  <Badge tone={statusTone[h.status as keyof typeof statusTone]}>{h.status}</Badge>
-                </Link>
-              </li>
-            ))}
+          <ul className={`${panel} divide-y divide-rule overflow-hidden`}>
+            {history.map((h) => {
+              const status = h.status as keyof typeof STATUS;
+              return (
+                <li key={h.id}>
+                  <Link href={`/ask/${h.id}`} className="press flex items-start gap-3 px-4 py-3.5 hover:bg-ground/60">
+                    <span className="min-w-0 flex-1">
+                      <span className="block leading-snug font-extrabold">{h.question}</span>
+                      <span className={`mt-0.5 flex items-center gap-1.5 text-sm ${status === "failed" ? "text-risk" : "text-muted"}`}>
+                        {(status === "queued" || status === "answering") && <RecDot waiting={status === "queued"} />}
+                        {STATUS[status] ?? h.status}
+                      </span>
+                    </span>
+                    <Icon name="chevron" className="mt-0.5 size-5 text-muted" />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         ) : (
-          <p className="text-sm text-zinc-500">No questions yet. Try: &ldquo;What have I saved about AI agents?&rdquo;</p>
+          <p className="px-1 text-sm text-muted">No questions yet. Try: “What have I saved about AI agents?”</p>
         )}
       </section>
     </>
