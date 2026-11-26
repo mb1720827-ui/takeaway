@@ -72,6 +72,7 @@ Each save becomes:
    ```
 6. **Notifications (optional):** install ntfy on your phone and set `NTFY_TOPIC` to a long random name.
 7. **Instagram reels that need a login (optional):** export your instagram.com cookies with the open-source *Get cookies.txt LOCALLY* extension, keep the file outside this folder, and set `INSTAGRAM_COOKIES` to its path. Only Instagram links use it; treat the file like a password.
+8. **Free-model fallback (optional):** if Claude Code reports that your Claude usage limit is reached, the worker retries the job on free models through [FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi). Set it up with `npx freellmapi setup-claude --profile free --url http://127.0.0.1:31415` and keep the FreeLLMAPI app open. Free models are weaker, and they may not read video frames.
 
 Want your own copy without doing this by hand? Use [**takeaway-builder**](https://github.com/mb1720827-ui/takeaway-builder): install it in your AI coding agent and ask it to build you one.
 

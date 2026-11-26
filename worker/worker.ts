@@ -11,6 +11,7 @@ import { cookieArgs, downloadError, formatTime, frameInterval, htmlToText, looks
 import { AnswerSchema, answerJsonSchema, saveToMarkdown, searchTerms, type SaveForAsk } from "../src/lib/ask";
 import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
 import { CardsSchema, cardsJsonSchema } from "../src/lib/recall";
+import { isUsageLimit, loadFallbackEnv } from "../src/lib/fallback";
 
 const run = promisify(execFile);
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
@@ -280,26 +281,42 @@ async function runClaude(claude: string, dir: string, prompt: string, schema: ob
   // Read-only and isolated: no shell or code tools, files limited to this folder, no personal hooks, plugins or MCP servers.
   const args = ["-p", "--output-format", "json", "--json-schema", JSON.stringify(schema), "--allowedTools", "Read",
     "--permission-mode", "dontAsk", "--restricted", "--setting-sources", "project", "--strict-mcp-config", "--no-session-persistence"];
-  if (process.env.TAKEAWAY_MODEL) args.push("--model", process.env.TAKEAWAY_MODEL);
 
-  const stdout = await new Promise<string>((resolve, reject) => {
-    const child = spawn(claude, args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"] });
-    let out = "";
-    let err = "";
-    const timer = setTimeout(() => child.kill(), 15 * 60_000);
-    child.stdout.on("data", (d) => (out += d));
-    child.stderr.on("data", (d) => (err += d));
-    child.on("error", reject);
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      if (code === 0) resolve(out);
-      else reject(new Error(`Claude Code exited with ${code}: ${(err || out).slice(0, 300)}`));
+  // `free` swaps Claude for the free models (see src/lib/fallback.ts); TAKEAWAY_MODEL names a Claude model, so it only applies to Claude.
+  const attempt = async (free?: Record<string, string>): Promise<unknown> => {
+    const runArgs = !free && process.env.TAKEAWAY_MODEL ? [...args, "--model", process.env.TAKEAWAY_MODEL] : args;
+    const stdout = await new Promise<string>((resolve, reject) => {
+      const child = spawn(claude, runArgs, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: free ? { ...process.env, ...free } : process.env });
+      let out = "";
+      let err = "";
+      const timer = setTimeout(() => child.kill(), 15 * 60_000);
+      child.stdout.on("data", (d) => (out += d));
+      child.stderr.on("data", (d) => (err += d));
+      child.on("error", reject);
+      child.on("close", (code) => {
+        clearTimeout(timer);
+        if (code === 0) resolve(out);
+        else reject(Object.assign(new Error(`Claude Code exited with ${code}: ${(err || out).slice(0, 300)}`), { output: `${err}\n${out}` }));
+      });
+      child.stdin.end(prompt);
     });
-    child.stdin.end(prompt);
-  });
-  const result = JSON.parse(stdout);
-  if (result.is_error) throw new Error(`Claude Code: ${String(result.result).slice(0, 300)}`);
-  return result.structured_output;
+    const result = JSON.parse(stdout);
+    if (result.is_error) throw new Error(`Claude Code: ${String(result.result).slice(0, 300)}`);
+    return result.structured_output;
+  };
+
+  try {
+    return await attempt();
+  } catch (err) {
+    const free = isUsageLimit(String((err as { output?: string }).output ?? err)) ? loadFallbackEnv() : null;
+    if (!free) throw err;
+    log("Claude's usage limit is reached; using the free models (FreeLLMAPI).");
+    try {
+      return await attempt(free);
+    } catch (freeErr) {
+      throw new Error(`Claude's usage limit is reached, and the free models failed too (is the FreeLLMAPI app open?): ${String(freeErr).slice(0, 300)}`);
+    }
+  }
 }
 
 // ---------- Ask: questions about your saves ----------
