@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectPlatform, extractUrl } from "./links";
-import { downloadError, formatTime, frameInterval, looksLikeVideo, parseVtt, pickFrames, transcriptText } from "./media";
+import { cookieArgs, downloadError, formatTime, frameInterval, looksLikeVideo, parseVtt, pickFrames, transcriptText } from "./media";
 import { notesJsonSchema, NotesSchema } from "./notes";
 
 describe("links", () => {
@@ -101,7 +101,16 @@ describe("looksLikeVideo", () => {
 describe("downloadError", () => {
   it("says a login is needed when Instagram hides the reel", () => {
     const err = "ERROR: [Instagram] DgKJdqhoEpX: Instagram sent an empty media response. Check if this post is accessible in your browser without being logged-in.";
-    expect(downloadError("instagram", err)).toBe("Instagram only shows this to logged-in users, so your laptop couldn't download it.");
+    expect(downloadError("instagram", err)).toBe(
+      "Instagram only shows this to logged-in users. Add your Instagram login (Settings, step 5) and try again.",
+    );
+  });
+
+  it("says the saved login stopped working when one was used", () => {
+    const err = "ERROR: [Instagram] DgKJdqhoEpX: Instagram sent an empty media response.";
+    expect(downloadError("instagram", err, true)).toBe(
+      "Instagram didn't accept your saved login. It may have expired: export your cookies again (Settings, step 5).",
+    );
   });
 
   it("names the platform for other download failures", () => {
@@ -112,6 +121,19 @@ describe("downloadError", () => {
 
   it("leaves ordinary web pages to the page reader", () => {
     expect(downloadError("web", "ERROR: Unsupported URL: https://example.com/post")).toBeNull();
+  });
+});
+
+describe("cookieArgs", () => {
+  it("gives yt-dlp the Instagram login only for Instagram links", () => {
+    expect(cookieArgs("instagram", "C:\\Users\\me\\.takeaway\\instagram-cookies.txt")).toEqual(["--cookies", "C:\\Users\\me\\.takeaway\\instagram-cookies.txt"]);
+    expect(cookieArgs("tiktok", "C:\\Users\\me\\.takeaway\\instagram-cookies.txt")).toEqual([]);
+    expect(cookieArgs("web", "C:\\Users\\me\\.takeaway\\instagram-cookies.txt")).toEqual([]);
+  });
+
+  it("adds nothing when no login is set up", () => {
+    expect(cookieArgs("instagram", undefined)).toEqual([]);
+    expect(cookieArgs("instagram", "  ")).toEqual([]);
   });
 });
 

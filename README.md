@@ -71,6 +71,7 @@ Each save becomes:
    powershell -ExecutionPolicy Bypass -File worker\install-autostart.ps1
    ```
 6. **Notifications (optional):** install ntfy on your phone and set `NTFY_TOPIC` to a long random name.
+7. **Instagram reels that need a login (optional):** export your instagram.com cookies with the open-source *Get cookies.txt LOCALLY* extension, keep the file outside this folder, and set `INSTAGRAM_COOKIES` to its path. Only Instagram links use it; treat the file like a password.
 
 Want your own copy without doing this by hand? Use [**takeaway-builder**](https://github.com/mb1720827-ui/takeaway-builder): install it in your AI coding agent and ask it to build you one.
 

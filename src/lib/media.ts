@@ -113,13 +113,25 @@ const PLATFORM_NAMES: Partial<Record<Platform, string>> = { tiktok: "TikTok", yo
  * A plain reason for a failed yt-dlp download on a video platform. Returns null for ordinary web pages,
  * which go to the page reader instead (reading a video platform's page never works without a login).
  */
-export function downloadError(platform: Platform, ytdlpError: string): string | null {
+export function downloadError(platform: Platform, ytdlpError: string, usedLogin = false): string | null {
   const name = PLATFORM_NAMES[platform];
   if (!name) return null;
   if (/logged-in|log in|login|cookies|private|empty media response/i.test(ytdlpError)) {
-    return `${name} only shows this to logged-in users, so your laptop couldn't download it.`;
+    if (platform !== "instagram") return `${name} only shows this to logged-in users, so your laptop couldn't download it.`;
+    return usedLogin
+      ? "Instagram didn't accept your saved login. It may have expired: export your cookies again (Settings, step 5)."
+      : "Instagram only shows this to logged-in users. Add your Instagram login (Settings, step 5) and try again.";
   }
   return `${name} wouldn't let your laptop download this right now. Try again later.`;
+}
+
+/**
+ * yt-dlp flags for the owner's Instagram login (a cookies.txt export). Only Instagram links get it,
+ * so the login is never sent anywhere else.
+ */
+export function cookieArgs(platform: Platform, cookiesFile: string | undefined): string[] {
+  const file = cookiesFile?.trim();
+  return platform === "instagram" && file ? ["--cookies", file] : [];
 }
 
 /** One frame every few seconds, so short clips get detail and long videos stay within budget. */

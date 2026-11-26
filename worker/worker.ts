@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import type { Platform } from "../src/lib/links";
-import { downloadError, formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
+import { cookieArgs, downloadError, formatTime, frameInterval, htmlToText, looksLikeVideo, parseVtt, pickFrames, transcriptText, type Frame, type Segment, type VideoMeta } from "../src/lib/media";
 import { AnswerSchema, answerJsonSchema, saveToMarkdown, searchTerms, type SaveForAsk } from "../src/lib/ask";
 import { DEFAULT_COLLECTIONS, NotesSchema, notesJsonSchema, type Notes } from "../src/lib/notes";
 import { CardsSchema, cardsJsonSchema } from "../src/lib/recall";
@@ -70,6 +70,8 @@ async function main() {
   await supabase.from("takeaway_questions").update({ status: "queued" }).eq("status", "answering");
 
   log(`Worker running with ${claude}. Checking for new saves and questions every ${POLL_MS / 1000}s.`);
+  const cookiesFile = process.env.INSTAGRAM_COOKIES?.trim();
+  if (cookiesFile) log(existsSync(cookiesFile) ? "Using your Instagram login for Instagram links." : `No Instagram cookies file at ${cookiesFile} yet, so Instagram links run without a login.`);
   for (;;) {
     // Questions first: they are quick, and someone is usually waiting for the answer.
     await answerQuestions(claude);
@@ -153,12 +155,15 @@ async function processItem(item: Item, claude: string) {
 /** Downloads what Claude needs into `dir`: context.md plus transcript.txt and frames/ for videos, or page.txt for articles. */
 async function prepare(item: Item, dir: string): Promise<Prepared> {
   let info: VideoInfo | null = null;
+  const cookiesFile = process.env.INSTAGRAM_COOKIES?.trim();
+  // Checked on every save, so a cookies file you add later works without restarting the worker.
+  const cookies = cookieArgs(item.platform as Platform, cookiesFile && existsSync(cookiesFile) ? cookiesFile : undefined);
   try {
-    const { stdout } = await run("yt-dlp", ["--dump-single-json", "--no-warnings", "--no-playlist", item.url], { timeout: 120_000, maxBuffer: 64 * MB });
+    const { stdout } = await run("yt-dlp", [...cookies, "--dump-single-json", "--no-warnings", "--no-playlist", item.url], { timeout: 120_000, maxBuffer: 64 * MB });
     info = JSON.parse(stdout) as VideoInfo;
   } catch (err) {
     // On a video platform the page reader can't help, so say why the download failed instead.
-    const reason = downloadError(item.platform as Platform, String((err as { stderr?: string }).stderr || err));
+    const reason = downloadError(item.platform as Platform, String((err as { stderr?: string }).stderr || err), cookies.length > 0);
     if (reason) throw new Error(reason);
     info = null;
   }
@@ -168,7 +173,7 @@ async function prepare(item: Item, dir: string): Promise<Prepared> {
 
   await run(
     "yt-dlp",
-    ["--no-warnings", "--no-playlist", "--write-subs", "--write-auto-subs", "--sub-langs", "en.*,eng.*", "--sub-format", "vtt",
+    [...cookies, "--no-warnings", "--no-playlist", "--write-subs", "--write-auto-subs", "--sub-langs", "en.*,eng.*", "--sub-format", "vtt",
       "--max-filesize", "500M", "-f", "b[height<=720]/bv*[height<=720]+ba/b", "--merge-output-format", "mp4", "-o", join(dir, "video.%(ext)s"), item.url],
     { timeout: 10 * 60_000, maxBuffer: 16 * MB },
   );

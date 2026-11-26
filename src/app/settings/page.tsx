@@ -86,6 +86,26 @@ async function Settings() {
         <p className="text-sm text-muted">It checks for new saves every few seconds. It needs Claude Code, yt-dlp and ffmpeg.</p>
       </Step>
 
+      <Step n={5} title="Save Instagram reels that need a login (optional)">
+        <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed marker:font-extrabold marker:text-tape">
+          <li>On your laptop, log in to instagram.com in Chrome.</li>
+          <li>
+            Install the <strong>Get cookies.txt LOCALLY</strong> extension (open source). On instagram.com, open it and export the cookies for this site
+            only.
+          </li>
+          <li>
+            Move the file out of the project folder, for example to <span className={`${code} wrap-anywhere`}>C:\Users\you\.takeaway\instagram-cookies.txt</span>.
+          </li>
+          <li>
+            Put that path in <span className={code}>INSTAGRAM_COOKIES</span> in <span className={code}>.env.local</span> and restart the worker.
+          </li>
+        </ol>
+        <p className="text-sm text-muted">
+          The file is your Instagram login: anyone who has it can use your account, so never share it or commit it. Only Instagram links use it. If
+          you log out of Instagram in Chrome it stops working; export it again.
+        </p>
+      </Step>
+
       <form action={signOut} className="flex justify-center">
         <button className={quietButton}>Sign out</button>
       </form>

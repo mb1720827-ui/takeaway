@@ -53,3 +53,6 @@ worker.log*
 .impeccable/mocks/
 .impeccable/questions/
 .impeccable/hook.cache.json
+
+# Browser cookie exports are logins; never commit one.
+*cookies*.txt
