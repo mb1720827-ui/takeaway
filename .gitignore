@@ -56,3 +56,6 @@ worker.log*
 
 # Browser cookie exports are logins; never commit one.
 *cookies*.txt
+
+# Supabase CLI cache
+supabase/.temp/
