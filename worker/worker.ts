@@ -113,6 +113,7 @@ async function processItem(item: Item, claude: string) {
   const dir = mkdtempSync(join(WORK_ROOT, "item-"));
   try {
     const prepared = await prepare(item, dir);
+    const preparedAt = Date.now();
     const [{ data: collections }, { data: recent }, { data: skillRows }] = await Promise.all([
       supabase.from("takeaway_collections").select("id, name").order("name"),
       supabase.from("takeaway_items").select("id, title, takeaway").eq("status", "ready").neq("id", item.id).order("processed_at", { ascending: false }).limit(40),
@@ -121,6 +122,7 @@ async function processItem(item: Item, claude: string) {
     ]);
     const skills = skillRows ?? [];
     const notes = await askClaude(claude, dir, collections ?? [], recent ?? [], skills);
+    const notesAt = Date.now();
     const recentIds = new Set((recent ?? []).map((r) => r.id));
     notes.connections = notes.connections.filter((c) => recentIds.has(c.id));
     const skillId = skills.some((s) => s.id === notes.skill_id) ? notes.skill_id : null;
@@ -141,7 +143,8 @@ async function processItem(item: Item, claude: string) {
       })
       .eq("id", item.id);
     if (error) throw new Error(`Saving notes failed: ${error.message}`);
-    log(`Ready in ${Math.round((Date.now() - started) / 1000)}s: ${notes.title} → ${notes.collection}`);
+    const secs = (from: number, to: number) => Math.round((to - from) / 1000);
+    log(`Ready in ${secs(started, Date.now())}s (download and frames ${secs(started, preparedAt)}s, AI notes ${secs(preparedAt, notesAt)}s): ${notes.title} → ${notes.collection}`);
     await notify(`/i/${item.id}`, `Ready: ${notes.title}`, notes.takeaway);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
