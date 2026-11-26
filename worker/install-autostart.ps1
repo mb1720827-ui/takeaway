@@ -4,7 +4,9 @@
 # Stop it:                           Stop-ScheduledTask -TaskName "Takeaway worker"
 # Remove it:                         Unregister-ScheduledTask -TaskName "Takeaway worker" -Confirm:$false
 $script = Join-Path $PSScriptRoot "start-worker.ps1"
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`""
+# conhost --headless: no window at all. Plain "powershell -WindowStyle Hidden" gets handed to Windows Terminal on
+# Windows 11 and shows a cmd.exe window, and closing that window stops the worker.
+$action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$script`""
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $trigger.Delay = "PT30S" # give Wi-Fi a moment to connect
 # Every 5 minutes: starts the worker again if it has stopped for any reason (a running one is left alone: IgnoreNew).
